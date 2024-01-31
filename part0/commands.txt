@@ -1,0 +1,11 @@
+building:
+cd out
+cmake ..
+cmake --build . 
+
+running:
+./part0
+
+cleaning:
+cmake --build . --target clean
+

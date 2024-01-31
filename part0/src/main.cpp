@@ -1,15 +1,10 @@
-#include <iostream>
-#include "file#1.h"
-#include "file#2.h"
+﻿#include "file1.hpp"
+#include "file2.hpp"
 
-using namespace std;
-
-int main(void) {
-
-	stdout << "part0: Ahmed Malik, Max Hofmeyer" << endl;
-
+int main()
+{
+	std::cout << "part0: Ahmed Malik, Max Hofmeyer" << std::endl;
 	func1();
 	func2();
-
 	return 0;
 }
