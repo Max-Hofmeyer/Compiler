@@ -2,19 +2,19 @@
 
 ## Flags:
 
-### Inital passing and reading of passed commands [DONE]
-### Fixing debug to actually work [MAX]
+* Inital passing and reading of passed commands [DONE]
+* Fixing debug to actually work [MAX]
 
 ## Enum List [DONE]
 
 ## Tokenizing [AHMED]:
 
-### Keywords
+* Keywords
 
-### Tokens
+* Tokens
 
 ## "Dynamic" printing
 
-### Debug mode(s)
+* Debug mode(s)
 
-### Verbose
+* Verbose
