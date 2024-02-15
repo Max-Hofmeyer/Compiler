@@ -1,13 +1,14 @@
 ﻿//Max Hofmeyer & Ahmed Malik
 
-#include "part1.h"
+#include <fstream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+#include "part1.h"
 
-//questions:
-//are the debug comments graded format wise
+//cd build | cmake .. | cmake --build . | ./part1
 
 enum class Tokens {
 	id,
@@ -47,56 +48,60 @@ enum class Tokens {
 
 struct token {
 	Tokens type;
+	std::string typeString;
 	int lineLoc;
 	std::optional<std::string> value;
 
-	explicit token(Tokens type, int lineLoc, std::optional<std::string> value = std::nullopt)
-		: type(type), lineLoc(lineLoc), value(std::move(value)) {
+	explicit token(Tokens type, int lineLoc, std::string typeStr, std::optional<std::string> value = std::nullopt)
+		: type(type), lineLoc(lineLoc), typeString(std::move(typeStr)), value(std::move(value)) {
 	}
 };
 
 struct cli_input {
-	std::string input_file;
-	std::optional<int> debug_level;
+	std::string input_file_path;
+	int debug_level = 2;
 	bool help_enabled = false;
 	bool verbose_enabled = false;
 };
 
-
 class Scanner {
-public: //transfer instead of duplicate
-	explicit Scanner(std::string source) : source_(std::move(source)) {
-	}
+public:
+	explicit Scanner(std::string source) : source_(std::move(source)) {}
 
 	std::vector<token> tokenize() {
 		std::string buffer;
 		std::vector<token> tokens;
 		int line = 1;
 
+		//keywords clear the buffer, tokens eat the buffer
 		while (peek().has_value()) {
 			if (std::isalpha(peek().value())) {
 				buffer.push_back(eat());
-				while (peek().has_value() && std::isalnum(peek().value())) {
-					buffer.push_back(eat());
-				}
+				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
 
 				if (buffer == "return") {
-					tokens.emplace_back(Tokens::_return, line);
+					tokens.emplace_back(Tokens::_return, line, buffer);
 					buffer.clear();
 				}
 				else if (buffer == "int") {
-					tokens.emplace_back(Tokens::_int, line);
+					tokens.emplace_back(Tokens::_int, line, buffer);
 					buffer.clear();
 				}
 				else if (buffer == "char") {
-					tokens.emplace_back(Tokens::_char, line);
+					tokens.emplace_back(Tokens::_char, line, buffer);
 					buffer.clear();
 				}
-				else if (buffer == "if") {
-					tokens.emplace_back(Tokens::_if, line);
+				else if (buffer == "if"){ tokens.emplace_back(Tokens::_if, line, buffer); }
+				else {
+					std::cout << buffer;
+					buffer.clear();
 				}
 			}
+			else {
+				eat();
+			}
 		}
+		return tokens;
 	}
 
 private:
@@ -115,19 +120,22 @@ private:
 
 cli_input assign_command_line_values(const int count, char** arguments) {
 	cli_input config;
-	for (int i = 1; i < count; i++) {
-		std::string arg = arguments[i];
-		if (arg == "-help") {
+	for (int i = 1; i < count; ++i) {
+		if (std::string arg = arguments[i]; arg == "-help") {
 			config.help_enabled = true;
 		}
 		else if (arg == "-debug" && i + 1 < count) {
-			config.debug_level = std::stoi(arguments[i++]);
+			try {
+				config.debug_level = std::stoi(arguments[++i]);
+			} catch (const std::invalid_argument& e) {
+				std::cerr << "Invalid argument for debug\n";
+			}
 		}
 		else if (arg == "-verbose") {
 			config.verbose_enabled = true;
 		}
 		else {
-			config.input_file = arg;
+			config.input_file_path = arg;
 		}
 	}
 	return config;
@@ -147,21 +155,39 @@ void verify_input(const cli_input& input) {
 	}
 
 	if (input.verbose_enabled) std::cout << "verbose active";
-	if (input.debug_level.has_value()) {
-		std::cout << "debug level is" << input.debug_level.value() << "\n";
+	if (input.debug_level != 2) {
+		std::cout << "debug level is " << input.debug_level << "\n";
 	}
-	else {
-		std::cout << "default" << "\n";
+	std::cout << "File path: " << input.input_file_path << "\n";
+}
+
+void print_tokens(const std::vector<token>& tokens) {
+	for (const auto& t : tokens) {
+		std::cout << t.typeString << "\n";
 	}
+	std::cout << tokens.size() << " tokens registered\n";
 }
 
 int main(int argc, char** argv) {
 	std::cout << "Max Hofmeyer & Ahmed Malik" << "\n";
-
 	const cli_input input = assign_command_line_values(argc, argv);
 	verify_input(input);
 
+	std::string fileContents;
+	{
+		std::stringstream s;
+		std::fstream f(input.input_file_path, std::ios::in);
+		s << f.rdbuf();
+		f.close();
+		fileContents = s.str();
+	}
+
+	Scanner scanner(std::move(fileContents));
+	std::vector<token> tokens = scanner.tokenize();
+	print_tokens(tokens);
+
 	//TODO: Command line arguments --DONE
+		//TODO: Make it not bad --DONE
 	//TODO: Finish enum --DONE
 	//TODO: Tokenize keywords
 	//TODO: Tokenize tokens
