@@ -6,7 +6,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 #include "part1.h"
+
 
 //cd build | cmake .. | cmake --build . | ./part1
 
@@ -26,6 +28,7 @@ enum class Tokens {
 	lbracket,
 	rbracket,
 	semicolon,
+	_eof, //added end of file token (discussed in class)
 	_not,
 	_return,
 	_int,
@@ -78,6 +81,11 @@ public:
 			if (std::isalpha(peek().value())) {
 				buffer.push_back(eat());
 				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
+				
+				/*std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
+					{"return", tokens.emplace_back(Tokens::_return, line, buffer)}
+				};*/
+
 
 				if (buffer == "return") {
 					tokens.emplace_back(Tokens::_return, line, buffer);
@@ -91,14 +99,68 @@ public:
 					tokens.emplace_back(Tokens::_char, line, buffer);
 					buffer.clear();
 				}
-				else if (buffer == "if"){ tokens.emplace_back(Tokens::_if, line, buffer); }
+				else if (buffer == "if"){ 
+					tokens.emplace_back(Tokens::_if, line, buffer); 
+					buffer.clear();
+				}
+				else if (buffer == "else") {
+					tokens.emplace_back(Tokens::_else, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "for") {
+					tokens.emplace_back(Tokens::_for, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "do") {
+					tokens.emplace_back(Tokens::_do, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "while") {
+					tokens.emplace_back(Tokens::_while, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "switch") {
+					tokens.emplace_back(Tokens::_switch, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "case") {
+					tokens.emplace_back(Tokens::_case, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "default") {
+					tokens.emplace_back(Tokens::_default, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "write") {
+					tokens.emplace_back(Tokens::_write, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "read") {
+					tokens.emplace_back(Tokens::_read, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "continue") {
+					tokens.emplace_back(Tokens::_continue, line, buffer);
+					buffer.clear();
+				}
+				else if (buffer == "break") {
+					tokens.emplace_back(Tokens::_break, line, buffer);
+					buffer.clear();
+				}
 				else {
-					std::cout << buffer;
+					//confirm with max: this should basically be ID token
+					tokens.emplace_back(Tokens::id, line, buffer);
+					std::cout << buffer; //is this for debugging?
 					buffer.clear();
 				}
 			}
 			else {
-				eat();
+				if (buffer == "(") {
+					tokens.emplace_back(Tokens::lparen, line, buffer);
+					eat();
+				}
+				else{ eat(); } //whitespace
+				
 			}
 		}
 		return tokens;
@@ -189,8 +251,8 @@ int main(int argc, char** argv) {
 	//TODO: Command line arguments --DONE
 		//TODO: Make it not bad --DONE
 	//TODO: Finish enum --DONE
-	//TODO: Tokenize keywords
-	//TODO: Tokenize tokens
+	//TODO: Tokenize keywords --DONE (baseline solution)
+	//TODO: Tokenize tokens --in progress (got hangry)
 	//TODO: Debug printing
 
 
