@@ -4,4 +4,5 @@
 
 /part1/out/build/x64-Debug
 /.vs
+/part1/out/build/x64-Debug
 /part1/CMakeSettings.json

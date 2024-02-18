@@ -1,13 +1,14 @@
 ﻿//Max Hofmeyer & Ahmed Malik
 
-#include "part1.h"
+#include <fstream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
+#include "part1.h"
 
-//questions:
-//are the debug comments graded format wise
+//cd build | cmake .. | cmake --build . | ./part1
 
 enum class Tokens {
 	id,
@@ -47,56 +48,148 @@ enum class Tokens {
 
 struct token {
 	Tokens type;
+	std::string typeString;
 	int lineLoc;
 	std::optional<std::string> value;
 
-	explicit token(Tokens type, int lineLoc, std::optional<std::string> value = std::nullopt)
-		: type(type), lineLoc(lineLoc), value(std::move(value)) {
+	explicit token(Tokens type, int lineLoc, std::string typeStr, std::optional<std::string> value = std::nullopt)
+		: type(type), lineLoc(lineLoc), typeString(std::move(typeStr)), value(std::move(value)) {
 	}
 };
 
-struct cli_input {
-	std::string input_file;
-	std::optional<int> debug_level;
-	bool help_enabled = false;
-	bool verbose_enabled = false;
-};
+//allows us to not worry about when to print based on command line args
+//just use the logger wherever a print is needed, and the flag will determine
+//if it needs to be printed.
+class Logger {
+public:
+	enum class Level {
+		Default = 2,
+		Scanner = 1,
+		Debug = 0,
+		Verbose = -1
+	};
+	static Level logLevel;
+	static void setLogLevel(Level level) {
+		logLevel = level;
+	}
 
+	static void scanner(const std::string& message) {
+		if(logLevel <= Level::Scanner) {
+			std::cout << "[SCANNER] " << message << "\n";
+		}
+	}
+	static void debug(const std::string& message) {
+		if (logLevel <= Level::Debug) {
+			std::cout << "[DEBUG] " << message << "\n";
+		}
+	}
+	static void verbose(const std::string& message) {
+		if (logLevel <= Level::Verbose) {
+			std::cout << "[VERBOSE] " << message << "\n";
+		}
+	}
+};
+Logger::Level Logger::logLevel = Logger::Level::Default;
+
+//clearer implementation then the cli_config struct. This allows us to
+//do checks of an object rather than pass by reference with a struct...
+class CliConfig {
+public:
+	static int debugLevel;
+	static bool helpEnabled, verboseEnabled, defaultEnabled;
+	static std::string filePath;
+	static std::string fileContents;
+
+	static void ParseCli(int count, char** arguments) {
+		for (int i = 1; i < count; ++i) {
+			if (std::string arg = arguments[i]; arg == "-help") {
+				helpEnabled = true;
+				std::cout
+					<< "Usage: parser.tc [options] toyc_source_file\n"
+					<< "where options include:\n"
+					<< "-help       display this usage message\n"
+					<< "-debug <level>  display messages that aid in tracing the compilation process.\n"
+					<< "               If level is:\n"
+					<< "               0 - all messages\n"
+					<< "               1 - scanner messages only\n"
+					<< "-verbose    display all information\n";
+			}
+			else if (arg == "-debug" && i + 1 < count) {
+				try {
+					debugLevel = std::stoi(arguments[++i]);
+				}
+				catch (const std::invalid_argument& e) {
+					std::cerr << "[EXCEPTION] Invalid argument for debug!\n";
+				}
+			}
+			else if (arg == "-verbose") {
+				verboseEnabled = true;
+			}
+			else {
+				filePath = arg;
+			}
+			if (debugLevel == 2 && !verboseEnabled) defaultEnabled = true;
+		}
+	}
+	//bool so we can check later if it worked or not
+	static bool LoadFile() {
+		if (filePath.empty()) return false;
+		std::ifstream f(filePath, std::ios::in);
+		if (!f) return false;
+		
+		std::stringstream s;
+		s << f.rdbuf();
+		f.close();
+		fileContents = s.str();
+		return true;
+	}
+};
+//c++ static declaration is so lame....
+int CliConfig::debugLevel = 2;
+bool CliConfig::helpEnabled = false;
+bool CliConfig::verboseEnabled = false;
+bool CliConfig::defaultEnabled = false;
+std::string CliConfig::filePath;
+std::string CliConfig::fileContents;
 
 class Scanner {
-public: //transfer instead of duplicate
-	explicit Scanner(std::string source) : source_(std::move(source)) {
-	}
+public:
+	explicit Scanner(std::string source) : source_(std::move(source)) {}
 
 	std::vector<token> tokenize() {
 		std::string buffer;
 		std::vector<token> tokens;
 		int line = 1;
 
+		//keywords clear the buffer, tokens eat the buffer
 		while (peek().has_value()) {
 			if (std::isalpha(peek().value())) {
 				buffer.push_back(eat());
-				while (peek().has_value() && std::isalnum(peek().value())) {
-					buffer.push_back(eat());
-				}
-
+				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
+				Logger::debug("Buffer: " + buffer);
 				if (buffer == "return") {
-					tokens.emplace_back(Tokens::_return, line);
+					tokens.emplace_back(Tokens::_return, line, buffer);
 					buffer.clear();
 				}
 				else if (buffer == "int") {
-					tokens.emplace_back(Tokens::_int, line);
+					tokens.emplace_back(Tokens::_int, line, buffer);
 					buffer.clear();
 				}
 				else if (buffer == "char") {
-					tokens.emplace_back(Tokens::_char, line);
+					tokens.emplace_back(Tokens::_char, line, buffer);
 					buffer.clear();
 				}
-				else if (buffer == "if") {
-					tokens.emplace_back(Tokens::_if, line);
+				else if (buffer == "if"){ tokens.emplace_back(Tokens::_if, line, buffer); }
+				else {
+					std::cout << buffer;
+					buffer.clear();
 				}
 			}
+			else {
+				eat();
+			}
 		}
+		return tokens;
 	}
 
 private:
@@ -113,60 +206,39 @@ private:
 	}
 };
 
-cli_input assign_command_line_values(const int count, char** arguments) {
-	cli_input config;
-	for (int i = 1; i < count; i++) {
-		std::string arg = arguments[i];
-		if (arg == "-help") {
-			config.help_enabled = true;
-		}
-		else if (arg == "-debug" && i + 1 < count) {
-			config.debug_level = std::stoi(arguments[i++]);
-		}
-		else if (arg == "-verbose") {
-			config.verbose_enabled = true;
-		}
-		else {
-			config.input_file = arg;
-		}
+void print_tokens(const std::vector<token>& tokens) {
+	for (const auto& t : tokens) {
+		//since we use std::optional, keywords wont have a value, and cannot be printed otherwise 
+		std::string valueStr = t.value.has_value() ? t.value.value() : t.typeString;
+		Logger::scanner("(<" + t.typeString + ">,\"" + valueStr + "\")");
 	}
-	return config;
-}
-
-void verify_input(const cli_input& input) {
-	if (input.help_enabled) {
-		std::cout
-			<< "Usage: parser.tc [options] toyc_source_file\n"
-			<< "where options include:\n"
-			<< "-help       display this usage message\n"
-			<< "-debug <level>  display messages that aid in tracing the compilation process.\n"
-			<< "               If level is:\n"
-			<< "               0 - all messages\n"
-			<< "               1 - scanner messages only\n"
-			<< "-verbose    display all information\n";
-	}
-
-	if (input.verbose_enabled) std::cout << "verbose active";
-	if (input.debug_level.has_value()) {
-		std::cout << "debug level is" << input.debug_level.value() << "\n";
-	}
-	else {
-		std::cout << "default" << "\n";
-	}
+	Logger::scanner("Total tokens: " + std::to_string(tokens.size()));
+	
 }
 
 int main(int argc, char** argv) {
 	std::cout << "Max Hofmeyer & Ahmed Malik" << "\n";
 
-	const cli_input input = assign_command_line_values(argc, argv);
-	verify_input(input);
+	CliConfig::ParseCli(argc, argv);
+	if (CliConfig::verboseEnabled) Logger::setLogLevel(Logger::Level::Verbose);
+	if (CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Debug);
+	if (CliConfig::debugLevel == 1) Logger::setLogLevel(Logger::Level::Scanner);
+	if (CliConfig::defaultEnabled) Logger::setLogLevel(Logger::Level::Default);
 
-	//TODO: Command line arguments --DONE
-	//TODO: Finish enum --DONE
+	if (CliConfig::LoadFile()) {
+		Logger::debug("ToyC file location: " + CliConfig::filePath);
+		Scanner scanner(std::move(CliConfig::fileContents));
+		const std::vector<token> tokens = scanner.tokenize();
+		print_tokens(tokens);
+	}
+
+	if(!CliConfig::LoadFile()) {
+		std::cerr << "[ERROR] No file found\n";
+		return EXIT_FAILURE;
+	}
+
 	//TODO: Tokenize keywords
 	//TODO: Tokenize tokens
-	//TODO: Debug printing
-
 
 	return EXIT_SUCCESS;
 }
