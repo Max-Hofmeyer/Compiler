@@ -169,10 +169,10 @@ public:
 			if (std::isalpha(peek().value())) {
 				buffer.push_back(eat());
 				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
-				
-				/*std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
+
+				std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
 					{"return", tokens.emplace_back(Tokens::_return, line, buffer)}
-				};*/
+				};
 
 
 				if (buffer == "return") {
@@ -187,8 +187,8 @@ public:
 					tokens.emplace_back(Tokens::_char, line, buffer);
 					buffer.clear();
 				}
-				else if (buffer == "if"){ 
-					tokens.emplace_back(Tokens::_if, line, buffer); 
+				else if (buffer == "if") {
+					tokens.emplace_back(Tokens::_if, line, buffer);
 					buffer.clear();
 				}
 				else if (buffer == "else") {
@@ -242,12 +242,29 @@ public:
 					buffer.clear();
 				}
 			}
-			else {
+			
+			else{
 				if (buffer == "(") {
 					tokens.emplace_back(Tokens::lparen, line, buffer);
 					eat();
 				}
-				else{ eat(); } //whitespace
+				else if (buffer == ")") {
+					tokens.emplace_back(Tokens::rparen, line, buffer);
+					eat();
+				}
+				else if (buffer == "+" || buffer == "-") {
+					tokens.emplace_back(Tokens::addop, line, buffer);
+					eat();
+				}
+				/*else if (buffer == "|") {
+					if (peek().value() == "|") {
+
+					}
+
+				}*/
+				else if (std::isspace(peek().value())) eat(); //whitespace
+
+				else{ eat(); } //boogaloo (error)
 				
 			}
 		}
