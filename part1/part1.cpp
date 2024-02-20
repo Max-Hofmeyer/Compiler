@@ -15,11 +15,11 @@
 enum class Tokens {
 	id,
 	number,
-	charliteral,
-	string,
+	charliteral, //not done
+	string, //not done
 	relop,
 	addop,
-	mulop,
+	mulop, // (/) not done
 	assignop,
 	lparen,
 	rparen,
@@ -28,6 +28,8 @@ enum class Tokens {
 	lbracket,
 	rbracket,
 	semicolon,
+	COMMA, //added comma 
+	COLON,//added Colon
 	_eof, //added end of file token (discussed in class)
 	_not,
 	_return,
@@ -170,9 +172,9 @@ public:
 				buffer.push_back(eat());
 				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
 
-				std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
-					{"return", tokens.emplace_back(Tokens::_return, line, buffer)}
-				};
+				//std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
+				//	{"return", tokens.emplace_back(Tokens::_return, line, buffer)}
+				//};
 
 
 				if (buffer == "return") {
@@ -242,7 +244,39 @@ public:
 					buffer.clear();
 				}
 			}
-			
+			else if (std::isdigit(peek().value())) { //finish digit
+				while (peek().has_value() && std::isdigit(peek(1).value())) { 
+					buffer.push_back(eat()); //buffer eats numbers until no numbers are left
+					// gotta add stuff that takes in a exponent
+				}
+				tokens.emplace_back(Tokens::number, line, buffer);
+			}
+			else if (peek().value() == '\"') { 
+				while (peek().has_value() && peek(1).value() != '\"') { //this may not work with empty strings
+					if (peek().value() == EOF) {
+						std::cerr << "[ERROR] String not ended\n";
+
+					}
+					else {
+						buffer.push_back(eat());
+					}
+				}
+				tokens.emplace_back(Tokens::string, line, buffer);
+				buffer.clear();
+			}
+			else if (peek().value() == '\'') { //this may not work
+				buffer.push_back(eat());
+				if (peek().value() == '\'') {
+					buffer.push_back(eat());
+					tokens.emplace_back(Tokens::charliteral, line, buffer);
+				}
+				else if (peek().has_value() && peek(1).value() == '\'') {
+					buffer.push_back(eat());
+					buffer.push_back(eat());
+					tokens.emplace_back(Tokens::charliteral, line, buffer);
+				}
+				else { std::cerr << "[ERROR] Charliteral not ended \n"; }
+			}
 			else{
 				if (buffer == "(") {
 					tokens.emplace_back(Tokens::lparen, line, buffer);
@@ -252,19 +286,110 @@ public:
 					tokens.emplace_back(Tokens::rparen, line, buffer);
 					eat();
 				}
+				else if (buffer == "{") {
+					tokens.emplace_back(Tokens::lcurly, line, buffer);
+					eat();
+				}
+				else if (buffer == "}") {
+					tokens.emplace_back(Tokens::rcurly, line, buffer);
+					eat();
+				}
+				else if (buffer == "[") {
+					tokens.emplace_back(Tokens::lbracket, line, buffer);
+					eat();
+				}
+				else if (buffer == "]") {
+					tokens.emplace_back(Tokens::rbracket, line, buffer);
+					eat();
+				}
+				else if (buffer == ",") {
+					tokens.emplace_back(Tokens::COMMA, line, buffer);
+					eat();
+				}
+				else if (buffer == ";") {
+					tokens.emplace_back(Tokens::semicolon, line, buffer);
+					eat();
+				}
+				else if (buffer == "!") {
+					if (peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+						eat();
+					}
+					else { // confirm if this works
+						tokens.emplace_back(Tokens::_not, line, buffer);
+						eat();
+					}
+				}
+				else if (buffer == "<") {
+					if (peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+						eat();
+					}
+					else { // could simplify theoretically (should ask)
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+					}
+				}
+				else if (buffer == ">") {
+					if (peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+						eat();
+					}
+					else { // could simplify theoretically (should ask)
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+					}
+				}
+				else if (buffer == ":") {
+					tokens.emplace_back(Tokens::COLON, line, buffer);
+					eat();
+				} 
 				else if (buffer == "+" || buffer == "-") {
 					tokens.emplace_back(Tokens::addop, line, buffer);
 					eat();
 				}
-				/*else if (buffer == "|") {
-					if (peek().value() == "|") {
-
+				else if (buffer == "|") { //may cause error
+					if (peek(1).value() == '|') {
+						tokens.emplace_back(Tokens::addop, line, buffer);
+						eat();
+						eat();
 					}
-
-				}*/
+					else { std::cerr << "[ERROR] Invalid token (|) \n"; }
+				}
+				else if (buffer == "*" || buffer == "%") { //WAIT ON / for comments from max
+					tokens.emplace_back(Tokens::mulop, line, buffer);
+					eat();
+				}
+				else if (buffer == "&") {
+					if (peek(1).value() == '&') { //verify through testing
+						tokens.emplace_back(Tokens::mulop, line, buffer); 
+						eat();
+						eat();
+					}
+					else { std::cerr << "[ERROR] Invalid Token (&)\n"; }
+				} 
+				else if (buffer == "=") {
+					if (peek(1).value() == '=') { //may cause error
+						tokens.emplace_back(Tokens::relop, line, buffer);
+						eat();
+						eat();
+					}
+					else {
+						tokens.emplace_back(Tokens::assignop, line, buffer);
+						eat();
+					}
+				}
 				else if (std::isspace(peek().value())) eat(); //whitespace
 
-				else{ eat(); } //boogaloo (error)
+				else if (peek().value() == EOF) { //confirm if this works
+					tokens.emplace_back(Tokens::_eof, line, EOF);
+					eat();
+				}
+
+				else { std::cerr << "[ERROR] Invalid token\n"; } //boogaloo (error) (Confirm if this is write
 				
 			}
 		}
@@ -320,7 +445,7 @@ int main(int argc, char** argv) {
 		//TODO: Make it not bad --DONE
 	//TODO: Finish enum --DONE
 	//TODO: Tokenize keywords --DONE (baseline solution)
-	//TODO: Tokenize tokens --in progress (got hangry)
+	//TODO: Tokenize tokens --Almost done
 	//TODO: Debug printing
 
 
