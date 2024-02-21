@@ -1,4 +1,4 @@
-﻿//Max Hofmeyer & Ahmed Malik
+﻿//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
 
 #include <fstream>
 #include <optional>
@@ -13,13 +13,13 @@
 //cd build | cmake .. | cmake --build . | ./part1
 
 enum class Tokens {
-	id,
+	ID,
 	number,
-	charliteral, //not done
-	string, //not done
+	charliteral,
+	string,
 	relop,
 	addop,
-	mulop, // (/) not done
+	mulop,
 	assignop,
 	lparen,
 	rparen,
@@ -28,9 +28,9 @@ enum class Tokens {
 	lbracket,
 	rbracket,
 	semicolon,
-	COMMA, //added comma 
-	COLON,//added Colon
-	_eof, //added end of file token (discussed in class)
+	comma,
+	colon,
+	eof,
 	_not,
 	_return,
 	_int,
@@ -50,7 +50,6 @@ enum class Tokens {
 	_newline
 };
 
-
 struct token {
 	Tokens type;
 	std::string typeString;
@@ -58,7 +57,7 @@ struct token {
 	std::optional<std::string> value;
 
 	explicit token(Tokens type, int lineLoc, std::string typeStr, std::optional<std::string> value = std::nullopt)
-		: type(type), lineLoc(lineLoc), typeString(std::move(typeStr)), value(std::move(value)) {
+		: type(type), typeString(std::move(typeStr)), lineLoc(lineLoc), value(std::move(value)) {
 	}
 };
 
@@ -73,31 +72,43 @@ public:
 		Debug = 0,
 		Verbose = -1
 	};
+
 	static Level logLevel;
+
 	static void setLogLevel(Level level) {
 		logLevel = level;
 	}
 
 	static void scanner(const std::string& message) {
-		if(logLevel <= Level::Scanner) {
+		if (logLevel <= Level::Scanner) {
 			std::cout << "[SCANNER] " << message << "\n";
 		}
 	}
+
 	static void debug(const std::string& message) {
 		if (logLevel <= Level::Debug) {
 			std::cout << "[DEBUG] " << message << "\n";
 		}
 	}
+
 	static void verbose(const std::string& message) {
 		if (logLevel <= Level::Verbose) {
 			std::cout << "[VERBOSE] " << message << "\n";
 		}
 	}
-};
-Logger::Level Logger::logLevel = Logger::Level::Default;
 
-//clearer implementation then the cli_config struct. This allows us to
-//do checks of an object rather than pass by reference with a struct...
+	static void warning(const std::string& message) {
+		std::cout << "[WARNING] " << message << "\n";
+	}
+
+	static void error(const std::string& message) {
+		std::cout << "[ERROR] " << message << "\n";
+	}
+};
+
+Logger::Level Logger::logLevel = Level::Default;
+
+
 class CliConfig {
 public:
 	static int debugLevel;
@@ -136,12 +147,13 @@ public:
 			if (debugLevel == 2 && !verboseEnabled) defaultEnabled = true;
 		}
 	}
+
 	//bool so we can check later if it worked or not
 	static bool LoadFile() {
 		if (filePath.empty()) return false;
 		std::ifstream f(filePath, std::ios::in);
 		if (!f) return false;
-		
+
 		std::stringstream s;
 		s << f.rdbuf();
 		f.close();
@@ -149,7 +161,7 @@ public:
 		return true;
 	}
 };
-//c++ static declaration is so lame....
+
 int CliConfig::debugLevel = 2;
 bool CliConfig::helpEnabled = false;
 bool CliConfig::verboseEnabled = false;
@@ -159,240 +171,334 @@ std::string CliConfig::fileContents;
 
 class Scanner {
 public:
-	explicit Scanner(std::string source) : source_(std::move(source)) {}
+	explicit Scanner(std::string source) : source_(std::move(source)) {
+	}
 
 	std::vector<token> tokenize() {
 		std::string buffer;
 		std::vector<token> tokens;
+		bool error = false;
 		int line = 1;
 
-		//keywords clear the buffer, tokens eat the buffer
-		while (peek().has_value()) {
+		while (peek().has_value() && !error) {
+			//keywords
 			if (std::isalpha(peek().value())) {
 				buffer.push_back(eat());
 				while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
-
-				//std::unordered_map<std::string, std::vector<token>> tokenize_list = { //in progress: need to add to constructor (confirm with max)
-				//	{"return", tokens.emplace_back(Tokens::_return, line, buffer)}
-				//};
-
+				Logger::debug(buffer);
 
 				if (buffer == "return") {
-					tokens.emplace_back(Tokens::_return, line, buffer);
+					tokens.emplace_back(Tokens::_return, line, "RETURN", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "int") {
-					tokens.emplace_back(Tokens::_int, line, buffer);
+					tokens.emplace_back(Tokens::_int, line, "INT", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "char") {
-					tokens.emplace_back(Tokens::_char, line, buffer);
+					tokens.emplace_back(Tokens::_char, line, "CHAR", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "if") {
-					tokens.emplace_back(Tokens::_if, line, buffer);
+					tokens.emplace_back(Tokens::_if, line, "IF", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "else") {
-					tokens.emplace_back(Tokens::_else, line, buffer);
+					tokens.emplace_back(Tokens::_else, line, "ELSE", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "for") {
-					tokens.emplace_back(Tokens::_for, line, buffer);
+					tokens.emplace_back(Tokens::_for, line, "FOR", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "do") {
-					tokens.emplace_back(Tokens::_do, line, buffer);
+					tokens.emplace_back(Tokens::_do, line, "DO", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "while") {
-					tokens.emplace_back(Tokens::_while, line, buffer);
+					tokens.emplace_back(Tokens::_while, line, "WHILE", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "switch") {
-					tokens.emplace_back(Tokens::_switch, line, buffer);
+					tokens.emplace_back(Tokens::_switch, line, "SWITCH", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "case") {
-					tokens.emplace_back(Tokens::_case, line, buffer);
+					tokens.emplace_back(Tokens::_case, line, "CASE", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "default") {
-					tokens.emplace_back(Tokens::_default, line, buffer);
+					tokens.emplace_back(Tokens::_default, line, "DEFAULT", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "write") {
-					tokens.emplace_back(Tokens::_write, line, buffer);
+					tokens.emplace_back(Tokens::_write, line, "WRITE", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "read") {
-					tokens.emplace_back(Tokens::_read, line, buffer);
+					tokens.emplace_back(Tokens::_read, line, "READ", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "continue") {
-					tokens.emplace_back(Tokens::_continue, line, buffer);
+					tokens.emplace_back(Tokens::_continue, line, "CONTINUE", buffer);
 					buffer.clear();
 				}
 				else if (buffer == "break") {
-					tokens.emplace_back(Tokens::_break, line, buffer);
+					tokens.emplace_back(Tokens::_break, line, "BREAK", buffer);
 					buffer.clear();
 				}
 				else {
-					//confirm with max: this should basically be ID token
-					tokens.emplace_back(Tokens::id, line, buffer);
-					std::cout << buffer; //is this for debugging?
+					tokens.emplace_back(Tokens::ID, line, "ID", buffer);
 					buffer.clear();
 				}
 			}
-			else if (std::isdigit(peek().value())) { //finish digit
-				while (peek().has_value() && std::isdigit(peek(1).value())) { 
-					buffer.push_back(eat()); //buffer eats numbers until no numbers are left
-					// gotta add stuff that takes in a exponent
+			//numbers
+			else if (std::isdigit(peek().value())) {
+				buffer.push_back(eat());
+				while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
+				//fraction
+				if(peek().value() == '.') {
+					buffer.push_back(eat());
+					if(!std::isdigit(peek().value())) {
+						Logger::error("No value after decimal at line: " + std::to_string(line));
+						error = true;
+					}
+					while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
 				}
-				tokens.emplace_back(Tokens::number, line, buffer);
-			}
-			else if (peek().value() == '\"') { 
-				while (peek().has_value() && peek(1).value() != '\"') { //this may not work with empty strings
-					if (peek().value() == EOF) {
-						std::cerr << "[ERROR] String not ended\n";
 
+				//exponent
+				if(peek().value() == 'E') {
+					buffer.push_back(eat());
+					if (peek().value() == '+' || peek().value() == '-') buffer.push_back(eat());
+					if (!std::isdigit(peek().value())) {
+						Logger::error("No value after exponent at line: " + std::to_string(line));
 					}
-					else {
-						buffer.push_back(eat());
-					}
+					while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
 				}
-				tokens.emplace_back(Tokens::string, line, buffer);
+				tokens.emplace_back(Tokens::number, line, "NUMBER", buffer);
 				buffer.clear();
 			}
-			else if (peek().value() == '\'') { //this may not work
+			//inline comments
+			else if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '/') {
+				eat();
+				eat();
+				while (peek().has_value() && peek().value() != '\n') {
+					eat();
+				}
+			}
+			//block comments
+			else if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
+				eat();
+				eat();
+				int nestedCommentCount = 1;
+
+				//handling nested blocks
+				while (nestedCommentCount > 0) {
+					if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
+						eat();
+						eat();
+						nestedCommentCount++;
+					}
+					else if (peek().value() == '*' && peek(1).has_value() && peek(1).value() == '/') {
+						eat();
+						eat();
+						nestedCommentCount--;
+					}
+					else eat();
+				}
+			}
+			//newline
+			else if (peek().value() == '\n') {
+				eat();
+				line++;
+			}
+			//strings
+			else if (peek().value() == '\"') {
 				buffer.push_back(eat());
+				while (peek().value() != '\"' && peek().value() != '\n') { buffer.push_back(eat()); }
+				if(peek().value() == '\"') {
+					buffer.push_back(eat());
+					tokens.emplace_back(Tokens::string, line, "STRING", buffer);
+				} else {
+					Logger::error("String not terminated at line: " + std::to_string(line));
+					error = true;
+				}
+				buffer.clear();
+			}
+			//characters
+			else if (peek().value() == '\'') {
+				buffer.push_back(eat());
+				//empty
 				if (peek().value() == '\'') {
 					buffer.push_back(eat());
-					tokens.emplace_back(Tokens::charliteral, line, buffer);
+					tokens.emplace_back(Tokens::charliteral, line, "CHARLITERAL", buffer);
 				}
-				else if (peek().has_value() && peek(1).value() == '\'') {
+				//value
+				else if (peek(1).has_value() && peek(1).value() == '\'') {
 					buffer.push_back(eat());
 					buffer.push_back(eat());
-					tokens.emplace_back(Tokens::charliteral, line, buffer);
+					tokens.emplace_back(Tokens::charliteral, line, "CHARLITERAL", buffer);
 				}
-				else { std::cerr << "[ERROR] Charliteral not ended \n"; }
+				else {
+					Logger::error("Char not terminated at line: " + std::to_string(line));
+					error = true;
+				}
+				buffer.clear();
 			}
-			else{
-				if (buffer == "(") {
-					tokens.emplace_back(Tokens::lparen, line, buffer);
+			//tokens
+			else {
+				//LPAREN (()
+				if (peek().value() == '(') {
+					tokens.emplace_back(Tokens::lparen, line, "LPAREN", "(");
 					eat();
 				}
-				else if (buffer == ")") {
-					tokens.emplace_back(Tokens::rparen, line, buffer);
+				//RPAREN ())
+				else if (peek().value() == ')') {
+					tokens.emplace_back(Tokens::rparen, line, "RPAREN", ")");
 					eat();
 				}
-				else if (buffer == "{") {
-					tokens.emplace_back(Tokens::lcurly, line, buffer);
+				//LCURLY ({)
+				else if (peek().value() == '{') {
+					tokens.emplace_back(Tokens::lcurly, line, "LCURLY", "{");
 					eat();
 				}
-				else if (buffer == "}") {
-					tokens.emplace_back(Tokens::rcurly, line, buffer);
+				//RCURLY (})
+				else if (peek().value() == '}') {
+					tokens.emplace_back(Tokens::rcurly, line, "RCURLY", "}");
 					eat();
 				}
-				else if (buffer == "[") {
-					tokens.emplace_back(Tokens::lbracket, line, buffer);
+				//LBRACKET([)
+				else if (peek().value() == '[') {
+					tokens.emplace_back(Tokens::lbracket, line, "LBRACKET", "[");
 					eat();
 				}
-				else if (buffer == "]") {
-					tokens.emplace_back(Tokens::rbracket, line, buffer);
+				//RBRACKET (])
+				else if (peek().value() == ']') {
+					tokens.emplace_back(Tokens::rbracket, line, "RBRACKET", "]");
 					eat();
 				}
-				else if (buffer == ",") {
-					tokens.emplace_back(Tokens::COMMA, line, buffer);
+				//COMMA (,)
+				else if (peek().value() == ',') {
+					tokens.emplace_back(Tokens::comma, line, "COMMA", ",");
 					eat();
 				}
-				else if (buffer == ";") {
-					tokens.emplace_back(Tokens::semicolon, line, buffer);
+				//SEMICOLON (;)
+				else if (peek().value() == ';') {
+					tokens.emplace_back(Tokens::semicolon, line, "SEMICOLON", ";");
 					eat();
 				}
-				else if (buffer == "!") {
-					if (peek(1).value() == '=') {
-						tokens.emplace_back(Tokens::relop, line, buffer);
-						eat();
-						eat();
-					}
-					else { // confirm if this works
-						tokens.emplace_back(Tokens::_not, line, buffer);
-						eat();
-					}
-				}
-				else if (buffer == "<") {
-					if (peek(1).value() == '=') {
-						tokens.emplace_back(Tokens::relop, line, buffer);
-						eat();
-						eat();
-					}
-					else { // could simplify theoretically (should ask)
-						tokens.emplace_back(Tokens::relop, line, buffer);
-						eat();
-					}
-				}
-				else if (buffer == ">") {
-					if (peek(1).value() == '=') {
-						tokens.emplace_back(Tokens::relop, line, buffer);
-						eat();
-						eat();
-					}
-					else { // could simplify theoretically (should ask)
-						tokens.emplace_back(Tokens::relop, line, buffer);
-						eat();
-					}
-				}
-				else if (buffer == ":") {
-					tokens.emplace_back(Tokens::COLON, line, buffer);
-					eat();
-				} 
-				else if (buffer == "+" || buffer == "-") {
-					tokens.emplace_back(Tokens::addop, line, buffer);
-					eat();
-				}
-				else if (buffer == "|") { //may cause error
-					if (peek(1).value() == '|') {
-						tokens.emplace_back(Tokens::addop, line, buffer);
-						eat();
-						eat();
-					}
-					else { std::cerr << "[ERROR] Invalid token (|) \n"; }
-				}
-				else if (buffer == "*" || buffer == "%") { //WAIT ON / for comments from max
-					tokens.emplace_back(Tokens::mulop, line, buffer);
-					eat();
-				}
-				else if (buffer == "&") {
-					if (peek(1).value() == '&') { //verify through testing
-						tokens.emplace_back(Tokens::mulop, line, buffer); 
-						eat();
-						eat();
-					}
-					else { std::cerr << "[ERROR] Invalid Token (&)\n"; }
-				} 
-				else if (buffer == "=") {
-					if (peek(1).value() == '=') { //may cause error
-						tokens.emplace_back(Tokens::relop, line, buffer);
+				//RELOP(!=) or NOT(!)
+				else if (peek().value() == '!') {
+					if (peek(1).has_value() && peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, "RELOP", "!=");
 						eat();
 						eat();
 					}
 					else {
-						tokens.emplace_back(Tokens::assignop, line, buffer);
+						// confirm if this works
+						tokens.emplace_back(Tokens::_not, line, "NOT", "!");
 						eat();
 					}
 				}
-				else if (std::isspace(peek().value())) eat(); //whitespace
-
-				else if (peek().value() == EOF) { //confirm if this works
-					tokens.emplace_back(Tokens::_eof, line, EOF);
+				//RELOP (<= or <)
+				else if (peek().value() == '<') {
+					if (peek(1).has_value() && peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, "RELOP", "<=");
+						eat();
+						eat();
+					}
+					else {
+						// could simplify theoretically (should ask)
+						tokens.emplace_back(Tokens::relop, line, "RELOP", "<");
+						eat();
+					}
+				}
+				//RELOP (>= or >)
+				else if (peek().value() == '>') {
+					if (peek(1).has_value() && peek(1).value() == '=') {
+						tokens.emplace_back(Tokens::relop, line, "RELOP", ">=");
+						eat();
+						eat();
+					}
+					else {
+						// could simplify theoretically (should ask)
+						tokens.emplace_back(Tokens::relop, line, "RELOP", ">");
+						eat();
+					}
+				}
+				//COLON (:)
+				else if (peek().value() == ':') {
+					tokens.emplace_back(Tokens::colon, line, "COLON", ":");
 					eat();
 				}
-
-				else { std::cerr << "[ERROR] Invalid token\n"; } //boogaloo (error) (Confirm if this is write
-				
+				//ADDOP (-)
+				else if (peek().value() == '-') {
+					tokens.emplace_back(Tokens::addop, line, "ADDOP", "-");
+					eat();
+				}
+				//ADDOP (+)
+				else if (peek().value() == '+') {
+					tokens.emplace_back(Tokens::addop, line, "ADDOP", "+");
+					eat();
+				}
+				//ADDOP (||)
+				else if (peek().value() == '|') {
+					//may cause error
+					if (peek(1).has_value() && peek(1).value() == '|') {
+						tokens.emplace_back(Tokens::addop, line, "ADDOP", "||");
+						eat();
+						eat();
+					}
+				}
+				//MULOP (*)
+				else if (peek().value() == '*') {
+					tokens.emplace_back(Tokens::mulop, line, "MULOP", "*");
+					eat();
+				}
+				//MULOP (%)
+				else if (peek().value() == '%') {
+					tokens.emplace_back(Tokens::mulop, line, "MULOP", "%");
+					eat();
+				}
+				//MULOP (/)
+				else if (peek().value() == '/') {
+					tokens.emplace_back(Tokens::mulop, line, "MULOP", "/");
+					eat();
+				}
+				//MULOP (&&)
+				else if (peek().value() == '&') {
+					//may cause error
+					if (peek(1).has_value() && peek(1).value() == '&') {
+						tokens.emplace_back(Tokens::mulop, line, "MULOP", "&&");
+						eat();
+						eat();
+					}
+				}
+				//ASSIGNOP (=)
+				else if (peek().value() == '=') {
+					if (peek(1).has_value() && peek(1).value() == '=') {
+						//may cause error
+						tokens.emplace_back(Tokens::relop, line, "RELOP", "==");
+						eat();
+						eat();
+					}
+					else {
+						tokens.emplace_back(Tokens::assignop, line, "ASSIGNOP", "=");
+						eat();
+					}
+				}
+				//whitespace
+				else if (std::isspace(peek().value())) eat();
+				//anything else must be illegal...
+				else {
+				std::string illegalChar = std::string(1, peek().value());
+					Logger::warning("Illegal character(" + illegalChar + ") at line: "+ std::to_string(line));
+				}
 			}
 		}
+
+		if (!error) tokens.emplace_back(Tokens::eof, line, "EOF", "EOF");
+		_index = 0;
 		return tokens;
 	}
 
@@ -412,42 +518,34 @@ private:
 
 void print_tokens(const std::vector<token>& tokens) {
 	for (const auto& t : tokens) {
-		//since we use std::optional, keywords wont have a value, and cannot be printed otherwise 
+		//a guard against ourselves, wont throw an exception if we forget to assign a value
 		std::string valueStr = t.value.has_value() ? t.value.value() : t.typeString;
 		Logger::scanner("(<" + t.typeString + ">,\"" + valueStr + "\")");
 	}
 	Logger::scanner("Total tokens: " + std::to_string(tokens.size()));
-	
 }
 
 int main(int argc, char** argv) {
-	std::cout << "Max Hofmeyer & Ahmed Malik" << "\n";
+	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024" << "\n";
 
 	CliConfig::ParseCli(argc, argv);
+
 	if (CliConfig::verboseEnabled) Logger::setLogLevel(Logger::Level::Verbose);
 	if (CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Debug);
 	if (CliConfig::debugLevel == 1) Logger::setLogLevel(Logger::Level::Scanner);
 	if (CliConfig::defaultEnabled) Logger::setLogLevel(Logger::Level::Default);
 
 	if (CliConfig::LoadFile()) {
-		Logger::debug("ToyC file location: " + CliConfig::filePath);
+		Logger::debug("ToyC File location: " + CliConfig::filePath);
 		Scanner scanner(std::move(CliConfig::fileContents));
 		const std::vector<token> tokens = scanner.tokenize();
 		print_tokens(tokens);
 	}
 
-	if(!CliConfig::LoadFile()) {
-		std::cerr << "[ERROR] No file found\n";
+	if (!CliConfig::LoadFile()) {
+		Logger::error("Failed to load file");
 		return EXIT_FAILURE;
 	}
-
-	//TODO: Command line arguments --DONE
-		//TODO: Make it not bad --DONE
-	//TODO: Finish enum --DONE
-	//TODO: Tokenize keywords --DONE (baseline solution)
-	//TODO: Tokenize tokens --Almost done
-	//TODO: Debug printing
-
 
 	return EXIT_SUCCESS;
 }
