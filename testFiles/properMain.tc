@@ -73,9 +73,9 @@ int main() {
 :
 
 //comments
-// This is a single-line comment
-/* This is a multi-line comment */
-/* Nested comment /* still a comment */ ends here */
+//singleline
+/*block*/
+/* nested block /* still a comment */ ends here */
 
-// Illegal character (to test error handling)
+//illegal character
 @
