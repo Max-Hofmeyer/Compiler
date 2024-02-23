@@ -29,10 +29,8 @@ int main(int argc, char** argv) {
 		Scanner scanner(std::move(CliConfig::fileContents));
 		const std::vector<token> tokens = scanner.tokenize();
 		if(!scanner.hasError()) print_tokens(tokens);
-		
 	}
-
-	if (!CliConfig::LoadFile()) {
+	else {
 		Logger::error("Failed to load file");
 		return EXIT_FAILURE;
 	}

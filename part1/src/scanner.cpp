@@ -337,7 +337,6 @@ std::optional<char> Scanner::peek(int offset) const {
 	return source_.at(_index + offset);
 }
 
-
 //returns the current character and increments the index
 char Scanner::eat() {
 	return source_.at(_index++);
