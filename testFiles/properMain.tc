@@ -1,0 +1,81 @@
+//keywords
+int main() {
+    char c = 'a';
+    if (c == 'a') {
+        return 0;
+    } else {
+        return 1;
+    }
+    for (int i = 0; i < 10; i++) {
+        write("Loop iteration");
+    }
+    do {
+        read(c);
+    } while (c != 'q');
+    switch (c) {
+        case 'a':
+            write("A");
+            break;
+        default:
+            write("Other");
+    }
+    continue;
+    break;
+    newline;
+}
+
+//numbers
+123
+456.789
+123E+10
+456.789E-10
+
+//character literals
+'a'
+'\n'
+''
+
+//string literals
+"hello world"
+""
+"string with space"
+"line1\nline2"
+
+//relational operators
+==
+!=
+<
+<=
+>
+>=
+
+//additive operators
++
+-
+||
+
+//multiplicative operators
+*
+/
+%
+&&
+
+//assignment operator
+=
+
+//other tokens
+()
+{}
+[]
+,
+;
+!
+:
+
+//comments
+//singleline
+/*block*/
+/* nested block /* still a comment */ ends here */
+
+//illegal character
+@
