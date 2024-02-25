@@ -2,14 +2,11 @@
 
 #include "cliConfig.h"
 #include "logger.h"
-#include <fstream>
-#include <iostream>
-#include <sstream>
 
 int CliConfig::debugLevel = -1;
 bool CliConfig::helpEnabled = false;
 bool CliConfig::verboseEnabled = false;
-bool CliConfig::defaultEnabled = true;
+//bool CliConfig::defaultEnabled = true;
 std::string CliConfig::filePath;
 std::string CliConfig::fileContents;
 
@@ -30,7 +27,7 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		else if (arg == "-debug" && i + 1 < count) {
 			try {
 				debugLevel = std::stoi(arguments[++i]);
-				defaultEnabled = false;
+				//defaultEnabled = false;
 			}
 			catch (const std::invalid_argument& e) {
 				std::cerr << "[EXCEPTION] Invalid argument for debug!\n";
@@ -38,12 +35,11 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		}
 		else if (arg == "-verbose") {
 			verboseEnabled = true;
-			defaultEnabled = false;
+			//defaultEnabled = false;
 		}
 		else {
 			filePath = arg;
 		}
-		if (debugLevel == -1 && !verboseEnabled) defaultEnabled = true;
 	}
 }
 

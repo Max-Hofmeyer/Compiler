@@ -1,13 +1,11 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
 
-#include "logger.h"
 #include "scanner.h"
 
-Scanner::Scanner(std::string source) : source_(std::move(source)), _index(0) {}
-
-std::vector<token> Scanner::tokenize() {
+void Scanner::scan() {
+	_index = 0;
+	_error = false;
 	std::string buffer;
-	std::vector<token> tokens;
 	int line = 1;
 
 	while (peek().has_value() && !_error) {
@@ -18,67 +16,67 @@ std::vector<token> Scanner::tokenize() {
 			Logger::debug(buffer);
 
 			if (buffer == "return") {
-				tokens.emplace_back(Tokens::_return, line, "RETURN", buffer);
+				sendToken(Tokens::_return, line, "RETURN", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "int") {
-				tokens.emplace_back(Tokens::_int, line, "INT", buffer);
+				sendToken(Tokens::_int, line, "INT", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "char") {
-				tokens.emplace_back(Tokens::_char, line, "CHAR", buffer);
+				sendToken(Tokens::_char, line, "CHAR", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "if") {
-				tokens.emplace_back(Tokens::_if, line, "IF", buffer);
+				sendToken(Tokens::_if, line, "IF", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "else") {
-				tokens.emplace_back(Tokens::_else, line, "ELSE", buffer);
+				sendToken(Tokens::_else, line, "ELSE", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "for") {
-				tokens.emplace_back(Tokens::_for, line, "FOR", buffer);
+				sendToken(Tokens::_for, line, "FOR", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "do") {
-				tokens.emplace_back(Tokens::_do, line, "DO", buffer);
+				sendToken(Tokens::_do, line, "DO", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "while") {
-				tokens.emplace_back(Tokens::_while, line, "WHILE", buffer);
+				sendToken(Tokens::_while, line, "WHILE", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "switch") {
-				tokens.emplace_back(Tokens::_switch, line, "SWITCH", buffer);
+				sendToken(Tokens::_switch, line, "SWITCH", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "case") {
-				tokens.emplace_back(Tokens::_case, line, "CASE", buffer);
+				sendToken(Tokens::_case, line, "CASE", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "default") {
-				tokens.emplace_back(Tokens::_default, line, "DEFAULT", buffer);
+				sendToken(Tokens::_default, line, "DEFAULT", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "write") {
-				tokens.emplace_back(Tokens::_write, line, "WRITE", buffer);
+				sendToken(Tokens::_write, line, "WRITE", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "read") {
-				tokens.emplace_back(Tokens::_read, line, "READ", buffer);
+				sendToken(Tokens::_read, line, "READ", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "continue") {
-				tokens.emplace_back(Tokens::_continue, line, "CONTINUE", buffer);
+				sendToken(Tokens::_continue, line, "CONTINUE", buffer);
 				buffer.clear();
 			}
 			else if (buffer == "break") {
-				tokens.emplace_back(Tokens::_break, line, "BREAK", buffer);
+				sendToken(Tokens::_break, line, "BREAK", buffer);
 				buffer.clear();
 			}
 			else {
-				tokens.emplace_back(Tokens::ID, line, "ID", buffer);
+				sendToken(Tokens::ID, line, "ID", buffer);
 				buffer.clear();
 			}
 		}
@@ -105,7 +103,7 @@ std::vector<token> Scanner::tokenize() {
 				}
 				while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
-			tokens.emplace_back(Tokens::number, line, "NUMBER", buffer);
+			sendToken(Tokens::number, line, "NUMBER", buffer);
 			buffer.clear();
 		}
 		//inline comments
@@ -149,7 +147,7 @@ std::vector<token> Scanner::tokenize() {
 			while (peek().value() != '\"' && peek().value() != '\n') { buffer.push_back(eat()); }
 			if (peek().value() == '\"') {
 				buffer.push_back(eat());
-				tokens.emplace_back(Tokens::string, line, "STRING", buffer);
+				sendToken(Tokens::string, line, "STRING", buffer);
 			}
 			else {
 				Logger::error("Illegal string at line: " + std::to_string(line));
@@ -163,13 +161,13 @@ std::vector<token> Scanner::tokenize() {
 			//empty
 			if (peek().value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
-				tokens.emplace_back(Tokens::charliteral, line, "CHARLITERAL", buffer);
+				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer);
 			}
 			//value
-			else if (peek(1).has_value() && peek(1).value() == '\'' && peek().value() != '\n'){
+			else if (peek(1).has_value() && peek(1).value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
 				buffer.push_back(eat());
-				tokens.emplace_back(Tokens::charliteral, line, "CHARLITERAL", buffer);
+				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer);
 			}
 			else {
 				Logger::error("Illegal char at line: " + std::to_string(line));
@@ -181,122 +179,122 @@ std::vector<token> Scanner::tokenize() {
 		else {
 			//LPAREN (()
 			if (peek().value() == '(') {
-				tokens.emplace_back(Tokens::lparen, line, "LPAREN", "(");
+				sendToken(Tokens::lparen, line, "LPAREN", "(");
 				eat();
 			}
 			//RPAREN ())
 			else if (peek().value() == ')') {
-				tokens.emplace_back(Tokens::rparen, line, "RPAREN", ")");
+				sendToken(Tokens::rparen, line, "RPAREN", ")");
 				eat();
 			}
 			//LCURLY ({)
 			else if (peek().value() == '{') {
-				tokens.emplace_back(Tokens::lcurly, line, "LCURLY", "{");
+				sendToken(Tokens::lcurly, line, "LCURLY", "{");
 				eat();
 			}
 			//RCURLY (})
 			else if (peek().value() == '}') {
-				tokens.emplace_back(Tokens::rcurly, line, "RCURLY", "}");
+				sendToken(Tokens::rcurly, line, "RCURLY", "}");
 				eat();
 			}
 			//LBRACKET([)
 			else if (peek().value() == '[') {
-				tokens.emplace_back(Tokens::lbracket, line, "LBRACKET", "[");
+				sendToken(Tokens::lbracket, line, "LBRACKET", "[");
 				eat();
 			}
 			//RBRACKET (])
 			else if (peek().value() == ']') {
-				tokens.emplace_back(Tokens::rbracket, line, "RBRACKET", "]");
+				sendToken(Tokens::rbracket, line, "RBRACKET", "]");
 				eat();
 			}
 			//COMMA (,)
 			else if (peek().value() == ',') {
-				tokens.emplace_back(Tokens::comma, line, "COMMA", ",");
+				sendToken(Tokens::comma, line, "COMMA", ",");
 				eat();
 			}
 			//SEMICOLON (;)
 			else if (peek().value() == ';') {
-				tokens.emplace_back(Tokens::semicolon, line, "SEMICOLON", ";");
+				sendToken(Tokens::semicolon, line, "SEMICOLON", ";");
 				eat();
 			}
 			//RELOP(!=) or NOT(!)
 			else if (peek().value() == '!') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", "!=");
+					sendToken(Tokens::relop, line, "RELOP", "!=");
 					eat();
 					eat();
 				}
 				else {
-					tokens.emplace_back(Tokens::_not, line, "NOT", "!");
+					sendToken(Tokens::_not, line, "NOT", "!");
 					eat();
 				}
 			}
 			//RELOP (<= or <)
 			else if (peek().value() == '<') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", "<=");
+					sendToken(Tokens::relop, line, "RELOP", "<=");
 					eat();
 					eat();
 				}
 				else {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", "<");
+					sendToken(Tokens::relop, line, "RELOP", "<");
 					eat();
 				}
 			}
 			//RELOP (>= or >)
 			else if (peek().value() == '>') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", ">=");
+					sendToken(Tokens::relop, line, "RELOP", ">=");
 					eat();
 					eat();
 				}
 				else {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", ">");
+					sendToken(Tokens::relop, line, "RELOP", ">");
 					eat();
 				}
 			}
 			//COLON (:)
 			else if (peek().value() == ':') {
-				tokens.emplace_back(Tokens::colon, line, "COLON", ":");
+				sendToken(Tokens::colon, line, "COLON", ":");
 				eat();
 			}
 			//ADDOP (-)
 			else if (peek().value() == '-') {
-				tokens.emplace_back(Tokens::addop, line, "ADDOP", "-");
+				sendToken(Tokens::addop, line, "ADDOP", "-");
 				eat();
 			}
 			//ADDOP (+)
 			else if (peek().value() == '+') {
-				tokens.emplace_back(Tokens::addop, line, "ADDOP", "+");
+				sendToken(Tokens::addop, line, "ADDOP", "+");
 				eat();
 			}
 			//ADDOP (||)
 			else if (peek().value() == '|') {
 				if (peek(1).has_value() && peek(1).value() == '|') {
-					tokens.emplace_back(Tokens::addop, line, "ADDOP", "||");
+					sendToken(Tokens::addop, line, "ADDOP", "||");
 					eat();
 					eat();
 				}
 			}
 			//MULOP (*)
 			else if (peek().value() == '*') {
-				tokens.emplace_back(Tokens::mulop, line, "MULOP", "*");
+				sendToken(Tokens::mulop, line, "MULOP", "*");
 				eat();
 			}
 			//MULOP (%)
 			else if (peek().value() == '%') {
-				tokens.emplace_back(Tokens::mulop, line, "MULOP", "%");
+				sendToken(Tokens::mulop, line, "MULOP", "%");
 				eat();
 			}
 			//MULOP (/)
 			else if (peek().value() == '/') {
-				tokens.emplace_back(Tokens::mulop, line, "MULOP", "/");
+				sendToken(Tokens::mulop, line, "MULOP", "/");
 				eat();
 			}
 			//MULOP (&&)
 			else if (peek().value() == '&') {
 				if (peek(1).has_value() && peek(1).value() == '&') {
-					tokens.emplace_back(Tokens::mulop, line, "MULOP", "&&");
+					sendToken(Tokens::mulop, line, "MULOP", "&&");
 					eat();
 					eat();
 				}
@@ -304,12 +302,12 @@ std::vector<token> Scanner::tokenize() {
 			//ASSIGNOP (=)
 			else if (peek().value() == '=') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					tokens.emplace_back(Tokens::relop, line, "RELOP", "==");
+					sendToken(Tokens::relop, line, "RELOP", "==");
 					eat();
 					eat();
 				}
 				else {
-					tokens.emplace_back(Tokens::assignop, line, "ASSIGNOP", "=");
+					sendToken(Tokens::assignop, line, "ASSIGNOP", "=");
 					eat();
 				}
 			}
@@ -324,10 +322,16 @@ std::vector<token> Scanner::tokenize() {
 		}
 	}
 
-	if (!_error) tokens.emplace_back(Tokens::eof, line, "EOF", "EOF");
-	_index = 0;
-	return tokens;
+	if (!_error) sendToken(Tokens::eof, line, "EOF", "EOF");
 }
+
+void Scanner::sendToken(const Tokens tokenType, const int line, const std::string& value, const std::string& buffer) {
+	const token t { tokenType, line, value, buffer };
+	const std::string valueStr = t.value.has_value() ? t.value.value() : t.typeString;
+	Logger::scanner("(<" + t.typeString + ">,\"" + valueStr + "\")");
+	Notify(t);
+}
+
 
 //looks at a character from the source string, default offset is 0
 //offset allows us to look ahead in the string to check for multi-character

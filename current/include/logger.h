@@ -15,8 +15,8 @@ public:
 
     static void setLogLevel(Level level);
     static void scanner(const std::string& message);
+    static void parser(const std::string& message);
     static void debug(const std::string& message);
-    static void verbose(const std::string& message);
     static void warning(const std::string& message);
     static void error(const std::string& message);
 
