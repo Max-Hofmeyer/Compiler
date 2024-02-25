@@ -1,20 +1,23 @@
-# Part 1
+# Part 2
 
-## Flags:
+## Tech Debt
+* change scanner to work alongside other programs, instead of dumping everything inside a vector [DONE]
+* Possibly remove std::optional from value string for tokens, instead manually assigning the values
 
-* Inital passing and reading of passed commands [DONE]
-* Fixing debug to actually work [MAX]
+## Parser
+Probably LR(1)
 
-## Enum List [DONE]
+### Build syntax understanding
+* Line by line?
 
-## Tokenizing [AHMED]:
+### Error messages
+* Find what token is needed for a line if it isn't valid syntax, and output it
 
-* Keywords
+## Abstract Syntax Tree (future problem)
 
-* Tokens
+## Expand CLI
+* New debug level, and lots of other features
 
-## "Dynamic" printing
-
-* Debug mode(s)
-
-* Verbose
+##PrettyPrinting
+* Outputs from the parser will have to respect the whitespace indent level
+  
