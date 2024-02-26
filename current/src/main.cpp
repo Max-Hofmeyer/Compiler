@@ -11,8 +11,10 @@ int main(int argc, char** argv) {
 	CliConfig::ParseCli(argc, argv);
 
 	if (CliConfig::verboseEnabled) Logger::setLogLevel(Logger::Level::Verbose);
-	else if (CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Debug);
+	else if (CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Verbose);
 	else if (CliConfig::debugLevel == 1) Logger::setLogLevel(Logger::Level::Scanner);
+	else if (CliConfig::debugLevel == 2) Logger::setLogLevel(Logger::Level::Parser);
+	else if (CliConfig::debugLevel == 3) Logger::setLogLevel(Logger::Level::CodeGenerator);
 	else Logger::setLogLevel(Logger::Level::Default);
 
 	if (CliConfig::LoadFile()) {

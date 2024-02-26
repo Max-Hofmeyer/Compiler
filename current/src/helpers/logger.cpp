@@ -4,24 +4,31 @@
 
 Logger::Level Logger::logLevel = Logger::Level::Default;
 
-void Logger::setLogLevel(Level level) {
+void Logger::setLogLevel(const Level level) {
 	logLevel = level;
 }
 
 void Logger::scanner(const std::string& message) {
-	if (logLevel <= Level::Scanner || logLevel <= Level::Verbose) {
+	if (logLevel == Level::Scanner || logLevel == Level::Verbose) {
 		std::cout << "[SCANNER] " << message << "\n";
 	}
 }
 
 void Logger::parser(const std::string& message) {
-	std::cout << "[PARSER] " << message << "\n";
+	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
+		std::cout << "[PARSER] " << message << "\n";
+	}
 }
-
 
 void Logger::debug(const std::string& message) {
 	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
 		std::cout << "[DEBUG] " << message << "\n";
+	}
+}
+
+void Logger::codeGenerator(const std::string& message) {
+	if (logLevel <= Level::CodeGenerator || logLevel <= Level::Verbose) {
+		std::cout << "[GENERATOR] " << message << "\n";
 	}
 }
 

@@ -10,8 +10,8 @@ class CliConfig {
 public:
     static void ParseCli(int count, char** arguments);
     static bool LoadFile();
-    static std::string fileContents;
-    static int debugLevel;
-    static bool helpEnabled, verboseEnabled, defaultEnabled;
-    static std::string filePath;
+    static int debugLevel = -1;
+    static bool helpEnabled, verboseEnabled, dumpAST, dumpCode = false;
+    static bool defaultEnabled = true;
+    static std::string filePath, outputFileName, fileContents, className;
 };
