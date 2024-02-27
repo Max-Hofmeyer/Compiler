@@ -327,8 +327,7 @@ void Scanner::scan() {
 
 void Scanner::sendToken(const Tokens tokenType, const int line, const std::string& value, const std::string& buffer) {
 	const token t { tokenType, line, value, buffer };
-	const std::string valueStr = t.value.has_value() ? t.value.value() : t.typeString;
-	Logger::scanner("(<" + t.typeString + ">,\"" + valueStr + "\")");
+	Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
 	Notify(t);
 }
 

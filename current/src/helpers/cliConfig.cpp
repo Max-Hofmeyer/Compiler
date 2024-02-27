@@ -3,6 +3,17 @@
 #include "cliConfig.h"
 #include "logger.h"
 
+int CliConfig::debugLevel = -1;
+bool CliConfig::helpEnabled = false;
+bool CliConfig::verboseEnabled = false;
+bool CliConfig::dumpAST = false;
+bool CliConfig::dumpCode = false;
+bool CliConfig::defaultEnabled = true;
+std::string CliConfig::filePath;
+std::string CliConfig::outputFileName;
+std::string CliConfig::fileContents;
+std::string CliConfig::className;
+
 void CliConfig::ParseCli(int count, char** arguments) {
 	for (int i = 1; i < count; ++i) {
 		if (std::string arg = arguments[i]; arg == "-help") {
