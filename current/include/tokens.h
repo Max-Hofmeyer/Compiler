@@ -40,11 +40,10 @@ enum class Tokens {
 
 struct token {
 	Tokens type;
-	std::string typeString;
+	std::string typeString, value;
 	int lineLoc;
-	std::optional<std::string> value;
 
-	explicit token(Tokens type, int lineLoc, std::string typeStr, std::optional<std::string> value = std::nullopt)
-		: type(type), typeString(std::move(typeStr)), lineLoc(lineLoc), value(std::move(value)) {
+	explicit token(Tokens type, int lineLoc, std::string typeStr, std::string value)
+		: type(type), typeString(std::move(typeStr)), value(std::move(value)), lineLoc(lineLoc) {
 	}
 };
