@@ -5,23 +5,24 @@
 #include "scanner.h"
 #include "mockParse.h"
 
-int main(int argc, char** argv) {
-	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024" << "\n";
-
-	CliConfig::ParseCli(argc, argv);
-
-	if (CliConfig::verboseEnabled) Logger::setLogLevel(Logger::Level::Verbose);
-	else if (CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Verbose);
+void assignLogLevel() {
+	if (CliConfig::verboseEnabled || CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Verbose);
 	else if (CliConfig::debugLevel == 1) Logger::setLogLevel(Logger::Level::Scanner);
 	else if (CliConfig::debugLevel == 2) Logger::setLogLevel(Logger::Level::Parser);
 	else if (CliConfig::debugLevel == 3) Logger::setLogLevel(Logger::Level::CodeGenerator);
 	else Logger::setLogLevel(Logger::Level::Default);
+}
+
+int main(int argc, char** argv) {
+	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024" << "\n";
+
+	CliConfig::ParseCli(argc, argv);
+	if (CliConfig::hasError) return EXIT_FAILURE;
+	assignLogLevel();
 
 	if (CliConfig::LoadFile()) {
-		Logger::debug("ToyC File location: " + CliConfig::filePath);
 		Scanner scanner(std::move(CliConfig::fileContents));
 		MockParser mockParser;
-
 		scanner.Add(&mockParser);
 		scanner.scan();
 	}
@@ -32,12 +33,3 @@ int main(int argc, char** argv) {
 
 	return EXIT_SUCCESS;
 }
-
-//void print_tokens(const std::vector<token>& tokens) {
-//	for (const auto& t : tokens) {
-//		//guard against trying to output unassigned optional values
-//		std::string valueStr = t.value.has_value() ? t.value.value() : t.typeString;
-//		Logger::scanner("(<" + t.typeString + ">,\"" + valueStr + "\")");
-//	}
-//	Logger::scanner("Total tokens: " + std::to_string(tokens.size()));
-//}

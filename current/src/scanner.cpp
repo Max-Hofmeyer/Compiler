@@ -331,7 +331,6 @@ void Scanner::sendToken(const Tokens tokenType, const int line, const std::strin
 	Notify(t);
 }
 
-
 //looks at a character from the source string, default offset is 0
 //offset allows us to look ahead in the string to check for multi-character
 //tokens. Will return null if peeking exceeds length of source string

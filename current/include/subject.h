@@ -3,6 +3,7 @@
 #include "subscriber.h"
 #include <list>
 
+//https://www.youtube.com/watch?v=Th1A2szPctI&ab_channel=Code%2CTech%2CandTutorials
 // A pattern to allow notifications to be sent to anyone who subscribes.
 // Overall the point is to not have users manually check something,
 // but rather be sent a notification whenever a certain event happens 

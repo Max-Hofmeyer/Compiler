@@ -5,13 +5,17 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
 class CliConfig {
 public:
     static void ParseCli(int count, char** arguments);
     static bool LoadFile();
     static int debugLevel;
-    static bool helpEnabled, verboseEnabled, dumpAST, dumpCode;
-    static bool defaultEnabled;
-    static std::string filePath, outputFileName, fileContents, className;
+    static bool verboseEnabled, dumpAST, hasError;
+    //static bool defaultEnabled;
+    static std::string filePath, fileContents;
+private:
+    static void OutputHelp();
+    static void CheckForFile(const std::string& arg);
 };

@@ -2,7 +2,6 @@
 
 #pragma once
 #include <string>
-#include <vector>
 #include <optional>
 #include "tokens.h"
 #include "logger.h"
@@ -11,9 +10,7 @@
 class Scanner : public Subject{
 public:
     explicit Scanner(std::string source) : source_(std::move(source)) {}
-    //std::vector<token> tokenize();
 	void scan();
-
     [[nodiscard]] bool hasError() const { return _error; }
 
 private:
