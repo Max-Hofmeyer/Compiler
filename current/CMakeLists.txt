@@ -10,8 +10,8 @@ add_executable(current
 	src/main.cpp
 	src/scanner.cpp
 	src/helpers/logger.cpp
-	src/helpers/cliConfig.cpp "include/tokens.h" "include/mockParse.h")
-
+	src/helpers/cliConfig.cpp
+	src/parser/parser.cpp)
 
 target_include_directories(current PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

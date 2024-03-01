@@ -1,3 +1,4 @@
+//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/23/2024
 #pragma once
 
 enum class Tokens {
@@ -42,8 +43,9 @@ struct token {
 	Tokens type;
 	std::string typeString, value;
 	int lineLoc;
+	bool isKeyword;
 
-	explicit token(Tokens type, int lineLoc, std::string typeStr, std::string value)
-		: type(type), typeString(std::move(typeStr)), value(std::move(value)), lineLoc(lineLoc) {
+	explicit token(Tokens type, int lineLoc, std::string typeString, std::string value, bool isKeyword)
+		: type(type), typeString(std::move(typeString)), value(std::move(value)), lineLoc(lineLoc), isKeyword(isKeyword) {
 	}
 };
