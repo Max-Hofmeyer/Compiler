@@ -3,7 +3,7 @@
 #include "logger.h"
 #include "cliConfig.h"
 #include "scanner.h"
-#include "mockParse.h"
+#include "parser.h"
 
 void assignLogLevel() {
 	if (CliConfig::verboseEnabled || CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Verbose);
@@ -22,8 +22,9 @@ int main(int argc, char** argv) {
 
 	if (CliConfig::LoadFile()) {
 		Scanner scanner(std::move(CliConfig::fileContents));
-		MockParser mockParser;
-		scanner.Add(&mockParser);
+		Parser parser;
+		if (scanner.hasError() || parser.hasError()) return EXIT_FAILURE;
+		scanner.Add(&parser);
 		scanner.scan();
 	}
 	else {

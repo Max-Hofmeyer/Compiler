@@ -1,3 +1,4 @@
+//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/23/2024
 
 #pragma once
 #include "subscriber.h"

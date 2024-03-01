@@ -19,9 +19,8 @@ public:
     ~Subscriber() {}
 
 protected:
-    void Update(const token& tok) override {
-        std::cout << "SUBID: \"" << _unique_id << "\" recieved message -> " << "sdfsdf" << std::endl;
-    };
+    void Update(const token& tok);
+        /*std::cout << "SUBID: \"" << _unique_id << "\" recieved message -> " << "sdfsdf" << std::endl;*/
 
 private:
     int _unique_id = -1;

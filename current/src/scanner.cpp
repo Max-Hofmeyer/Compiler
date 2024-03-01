@@ -16,67 +16,70 @@ void Scanner::scan() {
 			Logger::debug(buffer);
 
 			if (buffer == "return") {
-				sendToken(Tokens::_return, line, "RETURN", buffer);
+				sendToken(Tokens::_return, line, "RETURN", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "int") {
-				sendToken(Tokens::_int, line, "INT", buffer);
+				sendToken(Tokens::_int, line, "INT", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "char") {
-				sendToken(Tokens::_char, line, "CHAR", buffer);
+				sendToken(Tokens::_char, line, "CHAR", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "if") {
-				sendToken(Tokens::_if, line, "IF", buffer);
+				sendToken(Tokens::_if, line, "IF", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "else") {
-				sendToken(Tokens::_else, line, "ELSE", buffer);
+				sendToken(Tokens::_else, line, "ELSE", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "for") {
-				sendToken(Tokens::_for, line, "FOR", buffer);
+				sendToken(Tokens::_for, line, "FOR", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "do") {
-				sendToken(Tokens::_do, line, "DO", buffer);
+				sendToken(Tokens::_do, line, "DO", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "while") {
-				sendToken(Tokens::_while, line, "WHILE", buffer);
+				sendToken(Tokens::_while, line, "WHILE", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "switch") {
-				sendToken(Tokens::_switch, line, "SWITCH", buffer);
+				sendToken(Tokens::_switch, line, "SWITCH", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "case") {
-				sendToken(Tokens::_case, line, "CASE", buffer);
+				sendToken(Tokens::_case, line, "CASE", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "default") {
-				sendToken(Tokens::_default, line, "DEFAULT", buffer);
+				sendToken(Tokens::_default, line, "DEFAULT", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "write") {
-				sendToken(Tokens::_write, line, "WRITE", buffer);
+				sendToken(Tokens::_write, line, "WRITE", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "read") {
-				sendToken(Tokens::_read, line, "READ", buffer);
+				sendToken(Tokens::_read, line, "READ", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "continue") {
-				sendToken(Tokens::_continue, line, "CONTINUE", buffer);
+				sendToken(Tokens::_continue, line, "CONTINUE", buffer, true);
 				buffer.clear();
 			}
 			else if (buffer == "break") {
-				sendToken(Tokens::_break, line, "BREAK", buffer);
+				sendToken(Tokens::_break, line, "BREAK", buffer, true);
 				buffer.clear();
 			}
+			else if (buffer == "newline") {
+				sendToken(Tokens::_newline, line, "NEWLINE", buffer, true);
+			}
 			else {
-				sendToken(Tokens::ID, line, "ID", buffer);
+				sendToken(Tokens::ID, line, "ID", buffer, true);
 				buffer.clear();
 			}
 		}
@@ -103,7 +106,7 @@ void Scanner::scan() {
 				}
 				while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
-			sendToken(Tokens::number, line, "NUMBER", buffer);
+			sendToken(Tokens::number, line, "NUMBER", buffer, false);
 			buffer.clear();
 		}
 		//inline comments
@@ -147,7 +150,7 @@ void Scanner::scan() {
 			while (peek().value() != '\"' && peek().value() != '\n') { buffer.push_back(eat()); }
 			if (peek().value() == '\"') {
 				buffer.push_back(eat());
-				sendToken(Tokens::string, line, "STRING", buffer);
+				sendToken(Tokens::string, line, "STRING", buffer, false);
 			}
 			else {
 				Logger::error("Illegal string at line: " + std::to_string(line));
@@ -161,13 +164,13 @@ void Scanner::scan() {
 			//empty
 			if (peek().value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
-				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer);
+				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
 			}
 			//value
 			else if (peek(1).has_value() && peek(1).value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
 				buffer.push_back(eat());
-				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer);
+				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
 			}
 			else {
 				Logger::error("Illegal char at line: " + std::to_string(line));
@@ -179,122 +182,122 @@ void Scanner::scan() {
 		else {
 			//LPAREN (()
 			if (peek().value() == '(') {
-				sendToken(Tokens::lparen, line, "LPAREN", "(");
+				sendToken(Tokens::lparen, line, "LPAREN", "(", false);
 				eat();
 			}
 			//RPAREN ())
 			else if (peek().value() == ')') {
-				sendToken(Tokens::rparen, line, "RPAREN", ")");
+				sendToken(Tokens::rparen, line, "RPAREN", ")", false);
 				eat();
 			}
 			//LCURLY ({)
 			else if (peek().value() == '{') {
-				sendToken(Tokens::lcurly, line, "LCURLY", "{");
+				sendToken(Tokens::lcurly, line, "LCURLY", "{", false);
 				eat();
 			}
 			//RCURLY (})
 			else if (peek().value() == '}') {
-				sendToken(Tokens::rcurly, line, "RCURLY", "}");
+				sendToken(Tokens::rcurly, line, "RCURLY", "}", false);
 				eat();
 			}
 			//LBRACKET([)
 			else if (peek().value() == '[') {
-				sendToken(Tokens::lbracket, line, "LBRACKET", "[");
+				sendToken(Tokens::lbracket, line, "LBRACKET", "[", false);
 				eat();
 			}
 			//RBRACKET (])
 			else if (peek().value() == ']') {
-				sendToken(Tokens::rbracket, line, "RBRACKET", "]");
+				sendToken(Tokens::rbracket, line, "RBRACKET", "]", false);
 				eat();
 			}
 			//COMMA (,)
 			else if (peek().value() == ',') {
-				sendToken(Tokens::comma, line, "COMMA", ",");
+				sendToken(Tokens::comma, line, "COMMA", ",", false);
 				eat();
 			}
 			//SEMICOLON (;)
 			else if (peek().value() == ';') {
-				sendToken(Tokens::semicolon, line, "SEMICOLON", ";");
+				sendToken(Tokens::semicolon, line, "SEMICOLON", ";", false);
 				eat();
 			}
 			//RELOP(!=) or NOT(!)
 			else if (peek().value() == '!') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "!=");
+					sendToken(Tokens::relop, line, "RELOP", "!=", false);
 					eat();
 					eat();
 				}
 				else {
-					sendToken(Tokens::_not, line, "NOT", "!");
+					sendToken(Tokens::_not, line, "NOT", "!", false);
 					eat();
 				}
 			}
 			//RELOP (<= or <)
 			else if (peek().value() == '<') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "<=");
+					sendToken(Tokens::relop, line, "RELOP", "<=", false);
 					eat();
 					eat();
 				}
 				else {
-					sendToken(Tokens::relop, line, "RELOP", "<");
+					sendToken(Tokens::relop, line, "RELOP", "<", false);
 					eat();
 				}
 			}
 			//RELOP (>= or >)
 			else if (peek().value() == '>') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", ">=");
+					sendToken(Tokens::relop, line, "RELOP", ">=", false);
 					eat();
 					eat();
 				}
 				else {
-					sendToken(Tokens::relop, line, "RELOP", ">");
+					sendToken(Tokens::relop, line, "RELOP", ">", false);
 					eat();
 				}
 			}
 			//COLON (:)
 			else if (peek().value() == ':') {
-				sendToken(Tokens::colon, line, "COLON", ":");
+				sendToken(Tokens::colon, line, "COLON", ":", false);
 				eat();
 			}
 			//ADDOP (-)
 			else if (peek().value() == '-') {
-				sendToken(Tokens::addop, line, "ADDOP", "-");
+				sendToken(Tokens::addop, line, "ADDOP", "-", false);
 				eat();
 			}
 			//ADDOP (+)
 			else if (peek().value() == '+') {
-				sendToken(Tokens::addop, line, "ADDOP", "+");
+				sendToken(Tokens::addop, line, "ADDOP", "+", false);
 				eat();
 			}
 			//ADDOP (||)
 			else if (peek().value() == '|') {
 				if (peek(1).has_value() && peek(1).value() == '|') {
-					sendToken(Tokens::addop, line, "ADDOP", "||");
+					sendToken(Tokens::addop, line, "ADDOP", "||", false);
 					eat();
 					eat();
 				}
 			}
 			//MULOP (*)
 			else if (peek().value() == '*') {
-				sendToken(Tokens::mulop, line, "MULOP", "*");
+				sendToken(Tokens::mulop, line, "MULOP", "*", false);
 				eat();
 			}
 			//MULOP (%)
 			else if (peek().value() == '%') {
-				sendToken(Tokens::mulop, line, "MULOP", "%");
+				sendToken(Tokens::mulop, line, "MULOP", "%", false);
 				eat();
 			}
 			//MULOP (/)
 			else if (peek().value() == '/') {
-				sendToken(Tokens::mulop, line, "MULOP", "/");
+				sendToken(Tokens::mulop, line, "MULOP", "/", false);
 				eat();
 			}
 			//MULOP (&&)
 			else if (peek().value() == '&') {
 				if (peek(1).has_value() && peek(1).value() == '&') {
-					sendToken(Tokens::mulop, line, "MULOP", "&&");
+					sendToken(Tokens::mulop, line, "MULOP", "&&", false);
 					eat();
 					eat();
 				}
@@ -302,12 +305,12 @@ void Scanner::scan() {
 			//ASSIGNOP (=)
 			else if (peek().value() == '=') {
 				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "==");
+					sendToken(Tokens::relop, line, "RELOP", "==", false);
 					eat();
 					eat();
 				}
 				else {
-					sendToken(Tokens::assignop, line, "ASSIGNOP", "=");
+					sendToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
 					eat();
 				}
 			}
@@ -322,11 +325,11 @@ void Scanner::scan() {
 		}
 	}
 
-	if (!_error) sendToken(Tokens::eof, line, "EOF", "EOF");
+	if (!_error) sendToken(Tokens::eof, line, "EOF", "EOF", false);
 }
 
-void Scanner::sendToken(const Tokens tokenType, const int line, const std::string& value, const std::string& buffer) {
-	const token t { tokenType, line, value, buffer };
+void Scanner::sendToken(const Tokens type, const int lineLoc, const std::string& typeString, const std::string& value, const bool isKeyword) {
+	const token t { type, lineLoc, typeString, value, isKeyword };
 	Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
 	Notify(t);
 }
