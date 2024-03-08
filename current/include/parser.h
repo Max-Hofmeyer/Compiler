@@ -16,9 +16,16 @@ private:
 	size_t _index = 0;
 	bool _error = false;
 	std::optional<token> peek(int offset = 0) const;
-	std::optional<token> checkCurrentToken(Tokens type);
+	std::optional<token> eatCurrentToken(Tokens type);
 	token eat();
+	bool checkAndEatToken(Tokens type);
 	void parseProgram();
+	void parseStatement();
+	void parseTerminatedStatement();
 	void parseBreakStatement();
 	void parseIntExpression();
+	void parseExpression();
+	void parseTerm();
+
+	void parseType();
 };

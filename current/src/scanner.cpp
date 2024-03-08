@@ -324,7 +324,6 @@ void Scanner::scan() {
 			}
 		}
 	}
-
 	if (!_error) sendToken(Tokens::eof, line, "EOF", "EOF", false);
 }
 

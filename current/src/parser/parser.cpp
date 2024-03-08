@@ -1,91 +1,149 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/27/2024
 #include "parser.h"
 
-void Parser::Update(const token& t){
-	//this cant stay but its a future problem to fix.. 
-	if(t.type == Tokens::eof) {
-		_tokenBuffer.emplace_back(t);
+	/*if(t.type == Tokens::eof) {
 		parseProgram();
 		Logger::scanner("Successfully parsed program");
-	}
+	}*/
+void Parser::Update(const token& t){
+	_tokenBuffer.emplace_back(t);
+	if(!_tokenBuffer.empty()) parseProgram();
+	Logger::debug(std::to_string(_tokenBuffer.size()) + " tokens in parser");
 }
 
-//also maybe bad, as the second a token is sent, were assuming its a valid program?
-//extra logic needs to go here in the future
 void Parser::parseProgram() {
 	Logger::scanner("Entering Program");
+	parseType();
 	parseIntExpression();
 	//parseBreakStatement();
-	if (checkCurrentToken(Tokens::eof).has_value()) Logger::scanner("Program Identified");
+	if (checkAndEatToken(Tokens::eof)) Logger::scanner("Exiting Program");
 	else _error = true;
 }
 
+void Parser::parseType() {
+	Logger::scanner("Entering Type");
+	if (checkAndEatToken(Tokens::_int)) Logger::scanner("Generated Int");
+	if (checkAndEatToken(Tokens::_char)) Logger::scanner("Generated Char");
+	Logger::scanner("Exiting Type");
+}
 
-//after I made checkCurrentToken, much better then first attempt, but would
-//love to find a better way still
-void Parser::parseBreakStatement() {
-	Logger::scanner("Entering BreakStatement");
-	if (checkCurrentToken(Tokens::_break).has_value()) {
-		if(checkCurrentToken(Tokens::semicolon).has_value()) {
-			Logger::parser("Breakstatement Identified");
-		}
-		else {
-			Logger::error("bruh moment");
+void Parser::parseStatement() {
+	Logger::scanner("Entering Statement");
+	//expression
+
+	//break
+	if(checkAndEatToken(Tokens::_break)) {
+		Logger::scanner("Entering break statement");
+		if (checkAndEatToken(Tokens::semicolon)) {
+			Logger::scanner("Exiting break statement");
 		}
 	}
-}
-//bwfore I made checkCurrentToken..
-//you can use it as a reference as to how the flow should be, and why
-//I decided to make it
 
-/*
-void Parser::parseBreakStatement() {
-	Logger::scanner("Entering Breakstatement");
-	if (peek().has_value() && peek()->type == Tokens::_break) {
-		eat();
-		if (peek().has_value() && peek()->type == Tokens::semicolon) {
-			eat();
-			Logger::parser("Breakstatement");
-		}
-		else {
-			Logger::error("Error: ';' expected after break");
+	//compound
+
+	//if
+
+	//null
+	if (checkAndEatToken(Tokens::semicolon)) {
+		Logger::scanner("Null statement");
+	}
+	//return
+	if (checkAndEatToken(Tokens::_return)) {
+		Logger::scanner("Entering return statement");
+		if (checkAndEatToken(Tokens::semicolon)) {
+			Logger::scanner("Exiting return statement");
 		}
 	}
+	//while
+	if (checkAndEatToken(Tokens::_while)) {
+		Logger::scanner("Entering while statement");
+		if (checkAndEatToken(Tokens::lparen)) {
+			parseExpression();
+			if (checkAndEatToken(Tokens::rparen)) {
+				parseStatement();
+				Logger::scanner("Exiting while statement");
+			}else {
+				Logger::error("missed )");
+			}
+		}else {
+			Logger::error("missed while");
+		}
+		Logger::scanner("exiting while statement");
+	}
+	//read
+
+	//write
+
+	//newline
+
+	//expression
+
+	//relop
+
+	//simple
+
 }
-*/
+
 
 //can probably make it more inclusive, so chars can go here too..?
 //trying to find the best style. Check for the false, or true on has_value()..
 void Parser::parseIntExpression() {
     Logger::scanner("Entering parseIntDeclaration");	
-    if (!checkCurrentToken(Tokens::_int).has_value()) {
+    if (!eatCurrentToken(Tokens::_int).has_value()) {
         Logger::error("Expected int");
         return;
     }
-    if (!checkCurrentToken(Tokens::ID).has_value()) {
+    if (!eatCurrentToken(Tokens::ID).has_value()) {
         Logger::error("Expected identifier after int");
 		return;
     }
-    if (!checkCurrentToken(Tokens::assignop).has_value()) {
+    if (!eatCurrentToken(Tokens::assignop).has_value()) {
         Logger::error("Expected = after identifier");
         return;
     }
-    if (!checkCurrentToken(Tokens::number).has_value()) {
+    if (!eatCurrentToken(Tokens::number).has_value()) {
         Logger::error("Expected number after =");
         return;
     }
-    if (!checkCurrentToken(Tokens::semicolon).has_value()) {
+    if (!eatCurrentToken(Tokens::semicolon).has_value()) {
         Logger::error("cmon man");
-        return;
     }
+	Logger::parser("Generated int");
+	Logger::parser("Exiting parseIntExpression");
+
 }
 
-//so we dont have to keep doing:
-//if peek().value() == Token::type : eat().....
-std::optional<token> Parser::checkCurrentToken(Tokens type) {
-	if(_index < _tokenBuffer.size() && _tokenBuffer.at(_index).type == type) {
-		return _tokenBuffer.at(_index++);
+void Parser::parseExpression() {
+	Logger::scanner("Entering Expression");
+	if (checkAndEatToken(Tokens::number)) {}
+	else if (checkAndEatToken(Tokens::lparen)) {
+		parseExpression();
+		if (checkAndEatToken(Tokens::rparen)) {
+			Logger::scanner("found )");
+		}
+		else {
+			Logger::error("expected )");
+			_error = true;
+		}
 	}
+	else if (checkAndEatToken(Tokens::ID)) {
+		Logger::scanner("Created expression");
+	}
+	else {
+		Logger::error("Expected something");
+		_error = true;
+	}
+}
+
+//if current token matches, it gets eaten
+bool Parser::checkAndEatToken(Tokens type) {
+	if (eatCurrentToken(type).has_value()) return true;
+	return false;
+}
+
+//returns null if the value isnt inside the buffer
+std::optional<token> Parser::eatCurrentToken(Tokens type) {
+	if(_index < _tokenBuffer.size() && _tokenBuffer.at(_index).type == type) return eat();
 	return {};
 }
 
