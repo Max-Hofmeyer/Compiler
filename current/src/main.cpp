@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	if (CliConfig::LoadFile()) {
 		Scanner scanner(std::move(CliConfig::fileContents));
 		Parser parser;
-		if (scanner.hasError() || parser.hasError()) return EXIT_FAILURE;
+		if (Logger::hasError) return EXIT_FAILURE;
 		scanner.Add(&parser);
 		scanner.scan();
 	}

@@ -14,7 +14,7 @@ public:
         Debug = 0,
         Verbose = -1
     };
-
+    static bool hasError;
     static void setLogLevel(Level level);
     static void scanner(const std::string& message);
     static void parser(const std::string& message);

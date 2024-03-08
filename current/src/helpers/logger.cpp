@@ -3,6 +3,7 @@
 #include "logger.h"
 
 Logger::Level Logger::logLevel = Logger::Level::Default;
+bool Logger::hasError = false;
 
 void Logger::setLogLevel(const Level level) {
 	logLevel = level;
@@ -38,5 +39,6 @@ void Logger::warning(const std::string& message) {
 
 void Logger::error(const std::string& message) {
 	std::cout << "[ERROR] " << message << "\n";
+	
 }
 

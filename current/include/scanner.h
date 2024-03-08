@@ -11,7 +11,6 @@ class Scanner : public Subject{
 public:
     explicit Scanner(std::string source) : source_(std::move(source)) {}
 	void scan();
-    [[nodiscard]] bool hasError() const { return _error; }
 
 private:
     std::string source_;

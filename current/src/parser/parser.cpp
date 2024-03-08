@@ -6,36 +6,42 @@
 		Logger::scanner("Successfully parsed program");
 	}*/
 void Parser::Update(const token& t){
+	if (t.lineLoc == 1) tokline = 1;
 	_tokenBuffer.emplace_back(t);
-	if(!_tokenBuffer.empty()) parseProgram();
+	if (t.lineLoc != tokline || t.type == Tokens::eof) {
+		yourmom = true;
+		parseProgram();
+	}
+	tokline = t.lineLoc;
 	Logger::debug(std::to_string(_tokenBuffer.size()) + " tokens in parser");
+	
 }
 
 void Parser::parseProgram() {
-	Logger::scanner("Entering Program");
+	yourmom = false;
 	parseType();
 	parseIntExpression();
 	//parseBreakStatement();
 	if (checkAndEatToken(Tokens::eof)) Logger::scanner("Exiting Program");
-	else _error = true;
+	else Logger::error("No EOF detected/ Program error");
 }
 
 void Parser::parseType() {
-	Logger::scanner("Entering Type");
+	Logger::parser("Entering Type");
 	if (checkAndEatToken(Tokens::_int)) Logger::scanner("Generated Int");
 	if (checkAndEatToken(Tokens::_char)) Logger::scanner("Generated Char");
-	Logger::scanner("Exiting Type");
+	Logger::parser("Exiting Type");
 }
 
 void Parser::parseStatement() {
-	Logger::scanner("Entering Statement");
+	Logger::parser("Entering Statement");
 	//expression
 
 	//break
 	if(checkAndEatToken(Tokens::_break)) {
-		Logger::scanner("Entering break statement");
+		Logger::parser("Entering break statement");
 		if (checkAndEatToken(Tokens::semicolon)) {
-			Logger::scanner("Exiting break statement");
+			Logger::parser("Exiting break statement");
 		}
 	}
 
@@ -45,30 +51,30 @@ void Parser::parseStatement() {
 
 	//null
 	if (checkAndEatToken(Tokens::semicolon)) {
-		Logger::scanner("Null statement");
+		Logger::parser("Null statement");
 	}
 	//return
 	if (checkAndEatToken(Tokens::_return)) {
-		Logger::scanner("Entering return statement");
+		Logger::parser("Entering return statement");
 		if (checkAndEatToken(Tokens::semicolon)) {
-			Logger::scanner("Exiting return statement");
+			Logger::parser("Exiting return statement");
 		}
 	}
 	//while
 	if (checkAndEatToken(Tokens::_while)) {
-		Logger::scanner("Entering while statement");
+		Logger::parser("Entering while statement");
 		if (checkAndEatToken(Tokens::lparen)) {
 			parseExpression();
 			if (checkAndEatToken(Tokens::rparen)) {
 				//TODO: parseStatement();
-				Logger::scanner("Exiting while statement");
+				Logger::parser("Exiting while statement");
 			}else {
 				Logger::error("missed )");
 			}
 		}else {
 			Logger::error("missed while");
 		}
-		Logger::scanner("exiting while statement");
+		Logger::parser("exiting while statement");
 	}
 	//read
 
@@ -123,7 +129,7 @@ void Parser::parseExpression() {
 		}
 		else {
 			Logger::error("expected )");
-			_error = true;
+
 		}
 	}
 	else if (checkAndEatToken(Tokens::ID)) {
@@ -131,7 +137,6 @@ void Parser::parseExpression() {
 	}
 	else {
 		Logger::error("Expected something");
-		_error = true;
 	}
 }
 

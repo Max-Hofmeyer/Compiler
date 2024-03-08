@@ -8,13 +8,12 @@
 class Parser : public SubscriberInterface {
 public:
 	void Update(const token& t);
-	[[nodiscard]] bool hasError() const {
-		return _error;
-	}
+	
 private: 
 	std::vector<token> _tokenBuffer;
 	size_t _index = 0;
-	bool _error = false;
+	bool yourmom;
+	int tokline = 0;
 	std::optional<token> peek(int offset = 0) const;
 	std::optional<token> eatCurrentToken(Tokens type);
 	token eat();
