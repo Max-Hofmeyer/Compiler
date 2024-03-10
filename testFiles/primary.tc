@@ -1,0 +1,8 @@
+int var;
+char var2;
+
+myFunction();                     
+myFunction(123 + 123);                   
+//myFunction(123, 'b', "hello");
+//myFunction(1 + 2, 3 * 4);
+//outerFunction(innerFunction(5), innerFunction(6, 7));

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+#include "logger.h"
 
 class CliConfig {
 public:
@@ -13,7 +14,6 @@ public:
     static bool LoadFile();
     static int debugLevel;
     static bool verboseEnabled, dumpAST, hasError;
-    //static bool defaultEnabled;
     static std::string filePath, fileContents;
 private:
     static void OutputHelp();

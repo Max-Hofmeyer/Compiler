@@ -1,12 +1,11 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
 
 #include "cliConfig.h"
-#include "logger.h"
 
 int CliConfig::debugLevel = -1;
 bool CliConfig::verboseEnabled = false;
-bool CliConfig::hasError = false;
 bool CliConfig::dumpAST = false;
+bool CliConfig::hasError = false;
 
 std::string CliConfig::filePath;
 std::string CliConfig::fileContents;
@@ -52,7 +51,6 @@ void CliConfig::CheckForFile(const std::string& arg) {
 	else {
 		Logger::error("Command line error - \'" + arg + "\' is an unrecognized command line option\n");
 		OutputHelp();
-		hasError = true;
 	}
 }
 

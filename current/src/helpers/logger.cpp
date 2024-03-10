@@ -3,7 +3,6 @@
 #include "logger.h"
 
 Logger::Level Logger::logLevel = Logger::Level::Default;
-bool Logger::hasError = false;
 
 void Logger::setLogLevel(const Level level) {
 	logLevel = level;
@@ -19,6 +18,38 @@ void Logger::parser(const std::string& message) {
 	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
 		std::cout << "[PARSER] " << message << "\n";
 	}
+}
+
+void Logger::parserEnter(const std::string& message) {
+	if (logLevel == Level::Parser || logLevel == Level::Verbose){
+		std::cout << "[PARSER] Entering " << message << "\n";
+	}
+}
+
+void Logger::parserCreate(const std::string& message) {
+	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
+		std::cout << "[PARSER]" << "\tCreated " << message << "\n";
+	}
+}
+
+void Logger::parserExit(const std::string& message) {
+	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
+		std::cout << "[PARSER] Exiting " << message << "\n";
+	}
+}
+
+void Logger::outputToken(const token t) {
+	if (logLevel == Level::Parser) {
+		std::cout << "[TOKEN] " << t.typeString << " " << t.value << " " << t.lineLoc << "\n";
+	}
+}
+
+void Logger::outputTokens(const std::vector<token> t) {
+	std::cout << "\t" << t.front().lineLoc << ": ";
+	for (auto x : t) {
+		std::cout << x.value;
+	}
+	std::cout << "\n";
 }
 
 void Logger::debug(const std::string& message) {
@@ -39,6 +70,5 @@ void Logger::warning(const std::string& message) {
 
 void Logger::error(const std::string& message) {
 	std::cout << "[ERROR] " << message << "\n";
-	
 }
 

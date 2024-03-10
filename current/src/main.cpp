@@ -1,7 +1,7 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
 
-#include "logger.h"
 #include "cliConfig.h"
+#include "logger.h"
 #include "scanner.h"
 #include "parser.h"
 
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	if (CliConfig::LoadFile()) {
 		Scanner scanner(std::move(CliConfig::fileContents));
 		Parser parser;
-		if (Logger::hasError) return EXIT_FAILURE;
+
 		scanner.Add(&parser);
 		scanner.scan();
 	}

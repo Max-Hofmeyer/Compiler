@@ -4,16 +4,15 @@
 
 void Scanner::scan() {
 	_index = 0;
-	_error = false;
+	hasError = false;
 	std::string buffer;
 	int line = 1;
 
-	while (peek().has_value() && !_error) {
+	while (peek().has_value() && !hasError) {
 		//keywords
 		if (std::isalpha(peek().value())) {
 			buffer.push_back(eat());
 			while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
-			Logger::debug(buffer);
 
 			if (buffer == "return") {
 				sendToken(Tokens::_return, line, "RETURN", buffer, true);
@@ -86,25 +85,25 @@ void Scanner::scan() {
 		//numbers
 		else if (std::isdigit(peek().value())) {
 			buffer.push_back(eat());
-			while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
+			while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			//fraction
-			if (peek().value() == '.') {
+			if (peek().has_value() && peek().value() == '.') {
 				buffer.push_back(eat());
 				if (!std::isdigit(peek().value())) {
 					Logger::error("No value after decimal at line: " + std::to_string(line));
-					_error = true;
+					hasError = true;
 				}
-				while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
+				while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
 			//exponent
-			if (peek().value() == 'E') {
+			if (peek().has_value() && peek().value() == 'E') {
 				buffer.push_back(eat());
 				if (peek().value() == '+' || peek().value() == '-') buffer.push_back(eat());
 				if (!std::isdigit(peek().value())) {
 					Logger::error("No value after exponent at line: " + std::to_string(line));
-					_error = true;
+					hasError = true;
 				}
-				while (std::isdigit(peek().value())) { buffer.push_back(eat()); }
+				while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
 			sendToken(Tokens::number, line, "NUMBER", buffer, false);
 			buffer.clear();
@@ -126,6 +125,7 @@ void Scanner::scan() {
 			while (nestedCommentCount > 0) {
 				//if comment doesn't end before eof is reached
 				if (!peek().has_value()) break;
+				if (peek().value() == '\n') line++;
 				if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
 					eat();
 					eat();
@@ -154,7 +154,7 @@ void Scanner::scan() {
 			}
 			else {
 				Logger::error("Illegal string at line: " + std::to_string(line));
-				_error = true;
+				hasError = true;
 			}
 			buffer.clear();
 		}
@@ -174,7 +174,7 @@ void Scanner::scan() {
 			}
 			else {
 				Logger::error("Illegal char at line: " + std::to_string(line));
-				_error = true;
+				hasError = true;
 			}
 			buffer.clear();
 		}
@@ -324,7 +324,7 @@ void Scanner::scan() {
 			}
 		}
 	}
-	if (!_error) sendToken(Tokens::eof, line, "EOF", "EOF", false);
+	if (!hasError) sendToken(Tokens::eof, line, "EOF", "EOF", false);
 }
 
 void Scanner::sendToken(const Tokens type, const int lineLoc, const std::string& typeString, const std::string& value, const bool isKeyword) {
