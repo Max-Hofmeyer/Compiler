@@ -212,6 +212,158 @@ void Parser::parseFunctionCall() {
 	Logger::parserExit("FunctionCall");
 }
 
+void Parser::parseNewLineStatement() { //test
+	Logger::parserEnter("NewLineStatement");
+	if (checkAndEatToken(Tokens::_newline)) {
+		if (checkAndEatToken(Tokens::semicolon)) { //double check
+			Logger::parserCreate("NewLineStatement", previousToken().value); //confirm with max
+		}
+		else reportError("Expected ;");
+	}
+	else reportError("Expected newline");
+
+	Logger::parserExit("NewLineStatement");
+}
+
+void Parser::parseWriteStatement() {
+	Logger::parserEnter("WriteStatement");
+	if (checkAndEatToken(Tokens::_write)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			parseActualParameters(); // double check
+			if (checkAndEatToken(Tokens::rparen)) {
+				if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("WriteStatement", previousToken().value); //double check 
+				else reportError("Expected ;");
+			}
+			else reportError("Expected )");
+		}
+		else reportError("Expected (");
+	}
+	else reportError("Expected write");
+
+	Logger::parserExit("WriteStatement");
+}
+
+void Parser::parseReadStatement() { //change formatting
+	Logger::parserEnter("ReadStatement");
+	if (checkAndEatToken(Tokens::_read)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			parseIdentifier();
+			while (checkAndEatToken(Tokens::comma)) {
+				parseIdentifier();
+			}
+			if (checkAndEatToken(Tokens::rparen)) {
+				if (checkAndEatToken(Tokens::semicolon)) {
+					Logger::parserCreate("ReadStatement", previousToken().value);
+				}
+				else reportError("Expected ;");
+			}
+			else reportError("Expected )");
+		}
+		else reportError("Expected (");
+	}
+	else reportError("Expected read");
+
+	Logger::parserExit("ReadStatement");
+}
+
+void Parser::parseWhileStatement() {
+	Logger::parserEnter("WhileStatement");
+	if (checkAndEatToken(Tokens::_while)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			parseExpression();
+			if (checkAndEatToken(Tokens::rparen)) {
+				parseStatement();
+				Logger::parserCreate("WhileStatement", previousToken().value);
+			}
+			else reportError("Expected )");
+		}
+		else reportError("Expected (");
+	}
+	else reportError("Expected while");
+
+	Logger::parserExit("WhileStatement");
+}
+
+void Parser::parseReturnStatement() {
+	Logger::parserEnter("ReturnStatement");
+	if (checkAndEatToken(Tokens::_return)) {
+		if (!checkAndEatToken(Tokens::semicolon)) {
+			parseExpression();
+			if (checkAndEatToken(Tokens::semicolon)) {
+				Logger::parserCreate("ReturnStatement", previousToken().value);
+			}
+			else reportError("Expected ;");
+		}
+		else Logger::parserCreate("ReturnStatement", previousToken().value);
+	}
+	else reportError("Expected return");
+
+	Logger::parserExit("ReturnStatement");
+}
+
+void Parser::parseNullStatement() {
+	Logger::parserEnter("NullStatement");
+	if (checkAndEatToken(Tokens::semicolon)) {
+		Logger::parserCreate("NullStatement", previousToken().value);
+	}
+	else reportError("Expected ;");
+
+	Logger::parserExit("NullStatement");
+}
+
+void Parser::parseIfStatement() {
+	Logger::parserEnter("IfStatement");
+	if (checkAndEatToken(Tokens::_if)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			parseExpression();
+			if (checkAndEatToken(Tokens::rparen)) {
+				parseStatement();
+				if (!checkAndEatToken(Tokens::_else)) {
+					Logger::parserCreate("IfStatement", previousToken().value);
+				}
+				else { //doublecheck
+					parseStatement();
+					Logger::parserCreate("IfStatement", previousToken().value);
+				}
+			}
+			else reportError("Expected )");
+		}
+		else reportError("Expected (");
+	}
+	else reportError("Expected if");
+}
+
+void Parser::parseBreakStatement() {
+	Logger::parserEnter("BreakStatement");
+	if (checkAndEatToken(Tokens::_break)) {
+		if (checkAndEatToken(Tokens::semicolon)) {
+			Logger::parserCreate("BreakStatement", previousToken().value);
+		}
+		else reportError("Expected ;");
+	}
+	else reportError("Expected break");
+
+	Logger::parserExit("BreakStatement");
+}
+
+void Parser::parseExpressionStatement() {
+	Logger::parserEnter("ExpressionStatement");
+	parseExpression();
+	if (checkAndEatToken(Tokens::semicolon)) {
+		Logger::parserCreate("ExpressionStatement", previousToken().value);
+	}
+	else reportError("Expected ;");
+
+	Logger::parserExit("ExpressionStatement");
+}
+
+void Parser::parseCompoundStatement() {
+	Logger::parserEnter("CompoundStatement");
+	
+
+	Logger::parserExit("CompoundStatement");
+}
+
 //used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
 bool Parser::checkAndEatToken(Tokens type) {
 	if (eatCurrentToken(type).has_value()) return true;

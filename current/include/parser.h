@@ -23,6 +23,19 @@ private:
 	void parseFunctionCall();
 
 	/* Second section */
+	void parseNewLineStatement();
+	void parseWriteStatement();
+	void parseReadStatement();
+	void parseWhileStatement();
+	void parseReturnStatement();
+	void parseNullStatement();
+	void parseIfStatement();
+	void parseBreakStatement();
+	void parseExpressionStatement();
+	void parseCompoundStatement();
+
+
+	/* Third section */
 	void parseStatement();
 
 	/* Helper methods & variables */
