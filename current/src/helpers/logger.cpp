@@ -3,6 +3,7 @@
 #include "logger.h"
 
 Logger::Level Logger::logLevel = Logger::Level::Default;
+int Logger::spaces = 0;
 
 void Logger::setLogLevel(const Level level) {
 	logLevel = level;
@@ -21,19 +22,19 @@ void Logger::parser(const std::string& message) {
 }
 
 void Logger::parserEnter(const std::string& message) {
+	indent();
 	if (logLevel == Level::Parser || logLevel == Level::Verbose){
 		std::cout << "[PARSER] Entering " << message << "\n";
 	}
 }
 
-void Logger::parserCreate(const std::string& message) {
-	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
-		std::cout << "[PARSER]" << "\tCreated " << message << "\n";
-	}
+void Logger::parserCreate(const std::string& name, const std::string& data) {
+	std::cout << getIndent() << "[NODE] " << name <<" " << data << "\n";
 }
 
 void Logger::parserExit(const std::string& message) {
-	if (logLevel == Level::Parser || logLevel == Level::Verbose) {
+	outdent();
+	if (logLevel == Level::Parser || logLevel == Level::Verbose){
 		std::cout << "[PARSER] Exiting " << message << "\n";
 	}
 }
@@ -71,4 +72,3 @@ void Logger::warning(const std::string& message) {
 void Logger::error(const std::string& message) {
 	std::cout << "[ERROR] " << message << "\n";
 }
-

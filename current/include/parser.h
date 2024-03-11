@@ -34,11 +34,10 @@ private:
 	std::optional<token> peek(int offset = 0) const;
 	std::optional<token> eatCurrentToken(Tokens type);
 	token eat();
-	token previousToken();
+	token previousToken(int offset = 1);
 	void outputTokenLine() const;
-	void stubASTNode();
 	void reportError(const std::string& message);
-
+	//const std::string& name, const std::string& data = ""
 
 	//void parseTerminatedStatement();
 	//void parseBreakStatement();

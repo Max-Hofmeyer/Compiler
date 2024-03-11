@@ -30,9 +30,10 @@ void Parser::Update(const token& t){
 }
 
 void Parser::parseLine() {
-	//first line conditions
+	//first line condition
 	if (!parsingStarted) {
 		Logger::parserEnter("Program");
+		Logger::parserCreate("Program", "prog");
 		parsingStarted = true;
 	}
 
@@ -43,8 +44,6 @@ void Parser::parseLine() {
 
 	//if eof its the end of the program
 	if(currentT.value().type == Tokens::eof) {
-		stubASTNode();
-		Logger::parserCreate("Program");
 		Logger::parserExit("Program");
 		return;
 	}
@@ -86,20 +85,17 @@ void Parser::parsePrimary() {
 
 	//number
 	else if (checkAndEatToken(Tokens::number)) {
-		stubASTNode();
-		Logger::parserCreate("number");
+		Logger::parserCreate("number", previousToken().value);
 	}
 
 	//charliteral
 	else if (checkAndEatToken(Tokens::charliteral)) {
-		stubASTNode();
-		Logger::parserCreate("char");
+		Logger::parserCreate("char", previousToken().value);
 	}
 
 	//string
 	else if (checkAndEatToken(Tokens::string)) {
-		stubASTNode();
-		Logger::parserCreate("string");
+		Logger::parserCreate("string", previousToken().value);
 	}
 
 	//expression
@@ -114,8 +110,7 @@ void Parser::parsePrimary() {
 		if (previousToken().value == "-") {
 			Logger::parserEnter("subtraction primary");
 			parsePrimary();
-			stubASTNode();
-			Logger::parserCreate("subtraction primary");
+			Logger::parserCreate("subtraction primary", previousToken().value);
 			Logger::parserExit("subtraction primary");
 		}
 		else reportError("Expected '-' addop for primary");
@@ -135,12 +130,10 @@ void Parser::parsePrimary() {
 void Parser::parseType() {
 	Logger::parserEnter("Type");
 	if (checkAndEatToken(Tokens::_int)) {
-		stubASTNode();
-		Logger::parserCreate("Int");
+		Logger::parserCreate("Int", previousToken().value);
 	}
 	if (checkAndEatToken(Tokens::_char)) {
-		stubASTNode();
-		Logger::parserCreate("Char");
+		Logger::parserCreate("Char", previousToken().value);
 	}
 	Logger::parserExit("Type");
 }
@@ -148,8 +141,7 @@ void Parser::parseType() {
 void Parser::parseIdentifier() {
 	Logger::parserEnter("Identifier");
 	if (checkAndEatToken(Tokens::ID)) {
-		stubASTNode();
-		Logger::parserCreate("Identifier");
+		Logger::parserCreate("Identifier", previousToken().value);
 	}
 	Logger::parserExit("Identifier");
 }
@@ -157,53 +149,40 @@ void Parser::parseIdentifier() {
 void Parser::parseTerm() {
 	Logger::parserEnter("Term");
 	parsePrimary();
-	if(checkAndEatToken(Tokens::mulop)) {
+	while(checkAndEatToken(Tokens::mulop)) {
 		parsePrimary();
-		stubASTNode();
-		Logger::parserCreate("Term");
+		Logger::parserCreate("Term", previousToken().value);
 	}
-	else reportError("Expected mulop term");
 	Logger::parserExit("Term");
 }
 
 void Parser::parseSimpleExpression() {
 	Logger::parserEnter("SimpleExpression");
 	parseTerm();
-
-	if(checkAndEatToken(Tokens::mulop)) {
+	while(checkAndEatToken(Tokens::addop)) {
 		parseTerm();
-		stubASTNode();
-		Logger::parserCreate("SimpleExpression");
-
+		Logger::parserCreate("SimpleExpression", "+");
 	}
-	else reportError("Expected mulop expression");
 	Logger::parserExit("SimpleExpression");
 }
 
 void Parser::parseRelopExpression() {
 	Logger::parserEnter("RelopExpression");
 	parseSimpleExpression();
-
-	if (checkAndEatToken(Tokens::relop)) {
+	while(checkAndEatToken(Tokens::relop)) {
 		parseSimpleExpression();
-		stubASTNode();
-		Logger::parserCreate("RelopExpression");
-
+		Logger::parserCreate("RelopExpression", previousToken().value);
 	}
-	else reportError("Expected relop expression");
 	Logger::parserExit("RelopExpression");
 }
 
 void Parser::parseExpression() {
 	Logger::parserEnter("Expression");
 	parseRelopExpression();
-
-	if (checkAndEatToken(Tokens::assignop)) {
+	while(checkAndEatToken(Tokens::assignop)) {
 		parseRelopExpression();
-		stubASTNode();
-		Logger::parserCreate("Expression");
+		Logger::parserCreate("Expression", previousToken().value);
 	}
-	else reportError("Expected assignop expression");
 	Logger::parserExit("Expression");
 }
 
@@ -212,8 +191,7 @@ void Parser::parseActualParameters() {
 	parseExpression();
 	while (checkAndEatToken(Tokens::comma)) {
 		parseExpression();
-		stubASTNode();
-		Logger::parserCreate("ActualParameters");
+		Logger::parserCreate("ActualParameters", previousToken().value);
 	}
 	Logger::parserExit("ActualParameters");
 }
@@ -225,8 +203,7 @@ void Parser::parseFunctionCall() {
 			parseActualParameters();
 			if(!checkAndEatToken(Tokens::rparen)) reportError("Expected )");
 			else {
-				stubASTNode();
-				Logger::parserCreate("FunctionCall");
+				Logger::parserCreate("FunctionCall", previousToken().value);
 			}
 		}
 	}
@@ -235,7 +212,7 @@ void Parser::parseFunctionCall() {
 	Logger::parserExit("FunctionCall");
 }
 
-//used for convenience, I didnt want to do "if eatCurrentToken().has_value()" everywhere..
+//used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
 bool Parser::checkAndEatToken(Tokens type) {
 	if (eatCurrentToken(type).has_value()) return true;
 	return false;
@@ -256,21 +233,16 @@ std::optional<token> Parser::peek(int offset) const {
 token Parser::eat() { return _tokenBuffer.at(_index++); }
 
 //returns the last token checkAndEatToken ate
-token Parser::previousToken() {
-	if(_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at( _index - 1);
+token Parser::previousToken(int offset) {
+	if(_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at( _index - offset);
 	return _tokenBuffer.at(0);
 }
 
 //for debugging, and maybe error messages
 void Parser::outputTokenLine() const { Logger::outputTokens(_tokenBuffer); }
 
-//stub for ast, will be replaced with actual node definitions
-void Parser::stubASTNode(){
-	Logger::parserCreate("A node");
-	//Logger::outputToken(previousToken());
-}
-
 void Parser::reportError(const std::string& message) {
+	Logger::outputTokens(_tokenBuffer);
 	Logger::error(message);
 	hasError = true;
 }
