@@ -2,85 +2,53 @@
 #include "parser.h"
 
 //subscribed to the scanner. Logic inside buffers the token line by line.
-void Parser::Update(const token& t){
+void Parser::Update(const token& t) {
 	//since we need to start parsing after a complete line
 	if (!hasError) {
-		if (currentLine == 0) currentLine = t.lineLoc;
+		//if (currentLine == 0) currentLine = t.lineLoc;
 
-		//current token is on the next line, so start parsing
-		if (t.lineLoc != currentLine || t.type == Tokens::eof) {
-			if (!_tokenBuffer.empty()) {
-				parseLine();
-				_tokenBuffer.clear();
-				_index = 0;
-			}
-			//makes sure the current token is added 
-			if (t.type != Tokens::eof) {
-				_tokenBuffer.emplace_back(t);
-				currentLine = t.lineLoc;
-			}
-			//edge case of an empty program
-			else {
-				_tokenBuffer.emplace_back(t);
-				parseLine();
-			}
+		////current token is on the next line, so start parsing
+		//if (t.lineLoc != currentLine || t.type == Tokens::eof) {
+		//	if (!_tokenBuffer.empty()) {
+		//		parseLine();
+		//		if (_tokenBuffer.size() != _index) Logger::warning("Token buffer is being cleared before line can be fully parsed");
+		//		_tokenBuffer.clear();
+		//		_index = 0;
+		//	}
+		//	//makes sure the current token is added 
+		//	if (t.type != Tokens::eof) {
+		//		_tokenBuffer.emplace_back(t);
+		//		currentLine = t.lineLoc;
+		//	}
+		//	//edge case of an empty program
+		//	else {
+		//		_tokenBuffer.emplace_back(t);
+		//		parseLine();
+		//	}
+		//}
+		//else _tokenBuffer.emplace_back(t);
+		_tokenBuffer.emplace_back(t);
+		if(t.type == Tokens::eof) {
+			parseLine();
 		}
-		else _tokenBuffer.emplace_back(t);
+		//while(!_tokenBuffer.empty()) {
+		//	const token& nextT = _tokenBuffer.front();
+
+		//}
+
 	}
 }
 
 void Parser::parseLine() {
-	//first line condition
-	if (!parsingStarted) {
-		Logger::parserEnter("Program");
-		Logger::parserCreate("Program", "prog");
-		parsingStarted = true;
-	}
-
-	//instead of calling peek(0) & peek(1), just declare it and call it once instead
-	auto currentT = peek(0);
-	if (!currentT.has_value()) reportError("Expected a value in the line");
-	auto nextT = peek(1);
-
-	//if eof its the end of the program
-	if(currentT.value().type == Tokens::eof) {
-		Logger::parserExit("Program");
-		return;
-	}
-
-	//parse according to BNF hierarchy
-	if (!hasError){
-		if (currentT.value().type == Tokens::_char || currentT.value().type == Tokens::_int) {
-			parseType();
-			parseIdentifier();
-			if(nextT.has_value()) {
-				if (nextT.value().type == Tokens::lparen) parseFunctionCall();
-				else if (nextT.value().type == Tokens::assignop) parseExpression();
-			}
-		}
-		else if(currentT.value().type == Tokens::ID) {
-			parseIdentifier();
-			if(nextT.has_value()) {
-				if (nextT.value().type == Tokens::assignop) parseExpression();
-				else if (nextT.value().type == Tokens::lparen) parseFunctionCall();
-			}
-		}
-		else if(currentT.value().isKeyword) {
-			//todo: statements
-			Logger::parser("Stub statement");
-		}
-		if (!checkAndEatToken(Tokens::semicolon) && !checkAndEatToken(Tokens::eof)) reportError("Expected semicolon");
-		if (checkAndEatToken(Tokens::eof)) Logger::parserExit("Program");
-	}
+	Logger::outputTokens(_tokenBuffer);
+	while (peekSafe().type != Tokens::eof) parseToyCProgram();
 }
 
 void Parser::parsePrimary() {
 	Logger::parserEnter("Primary");
-	if (checkAndEatToken(Tokens::ID)) {
+	if (peekSafe().type == Tokens::ID) {
 		parseIdentifier();
-		//since parseFunctionCall is the one that eats the lparen, just check for it
-		if (peek().has_value() && peek().value().type == Tokens::lparen) parseFunctionCall();
-		else reportError("Expected (");
+		if (peekSafe().type == Tokens::lparen) parseFunctionCall();
 	}
 
 	//number
@@ -101,7 +69,7 @@ void Parser::parsePrimary() {
 	//expression
 	else if (checkAndEatToken(Tokens::lparen)) {
 		parseExpression();
-		if (!checkAndEatToken(Tokens::rparen)) reportError("expected (");
+		if (!checkAndEatToken(Tokens::rparen)) reportError("expected )");
 	}
 
 	//primary (-)
@@ -149,9 +117,10 @@ void Parser::parseIdentifier() {
 void Parser::parseTerm() {
 	Logger::parserEnter("Term");
 	parsePrimary();
-	while(checkAndEatToken(Tokens::mulop)) {
+	while (checkAndEatToken(Tokens::mulop)) {
+		token t = previousToken();
 		parsePrimary();
-		Logger::parserCreate("Term", previousToken().value);
+		Logger::parserCreate("Term", t.value);
 	}
 	Logger::parserExit("Term");
 }
@@ -159,9 +128,10 @@ void Parser::parseTerm() {
 void Parser::parseSimpleExpression() {
 	Logger::parserEnter("SimpleExpression");
 	parseTerm();
-	while(checkAndEatToken(Tokens::addop)) {
+	while (checkAndEatToken(Tokens::addop)) {
+		token t = previousToken();
 		parseTerm();
-		Logger::parserCreate("SimpleExpression", "+");
+		Logger::parserCreate("SimpleExpression", t.value);
 	}
 	Logger::parserExit("SimpleExpression");
 }
@@ -169,9 +139,10 @@ void Parser::parseSimpleExpression() {
 void Parser::parseRelopExpression() {
 	Logger::parserEnter("RelopExpression");
 	parseSimpleExpression();
-	while(checkAndEatToken(Tokens::relop)) {
+	while (checkAndEatToken(Tokens::relop)) {
+		token t = previousToken();
 		parseSimpleExpression();
-		Logger::parserCreate("RelopExpression", previousToken().value);
+		Logger::parserCreate("RelopExpression", t.value);
 	}
 	Logger::parserExit("RelopExpression");
 }
@@ -179,9 +150,11 @@ void Parser::parseRelopExpression() {
 void Parser::parseExpression() {
 	Logger::parserEnter("Expression");
 	parseRelopExpression();
-	while(checkAndEatToken(Tokens::assignop)) {
+	if (peekSafe().type == Tokens::assignop) {
+		token t = peekSafe();
+		checkAndEatToken(Tokens::assignop);
 		parseRelopExpression();
-		Logger::parserCreate("Expression", previousToken().value);
+		Logger::parserCreate("Expression", t.value);
 	}
 	Logger::parserExit("Expression");
 }
@@ -191,34 +164,37 @@ void Parser::parseActualParameters() {
 	parseExpression();
 	while (checkAndEatToken(Tokens::comma)) {
 		parseExpression();
-		Logger::parserCreate("ActualParameters", previousToken().value);
+		Logger::parserCreate("ActualParameters");
 	}
 	Logger::parserExit("ActualParameters");
 }
 
 void Parser::parseFunctionCall() {
 	Logger::parserEnter("FunctionCall");
-	if(checkAndEatToken(Tokens::lparen)) {
-		if(!checkAndEatToken(Tokens::rparen)) {
+	token t = previousToken();
+	if (checkAndEatToken(Tokens::lparen)) {
+		if (peekSafe(1).type != Tokens::rparen) {
 			parseActualParameters();
-			if(!checkAndEatToken(Tokens::rparen)) reportError("Expected )");
-			else {
-				Logger::parserCreate("FunctionCall", previousToken().value);
-			}
+			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
+			else reportError("Expected ) in FunctionCall");
 		}
+		else {
+			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
+		}
+
 	}
-	else reportError("Expected (");
+	//else reportError("Expected (");
 
 	Logger::parserExit("FunctionCall");
 }
 
-void Parser::parseNewLineStatement() { //test
+void Parser::parseNewLineStatement() {
 	Logger::parserEnter("NewLineStatement");
 	if (checkAndEatToken(Tokens::_newline)) {
-		if (checkAndEatToken(Tokens::semicolon)) { //double check
-			Logger::parserCreate("NewLineStatement", previousToken().value); //confirm with max
+		if (checkAndEatToken(Tokens::semicolon)) {
+			Logger::parserCreate("NewLineStatement", " ");
 		}
-		else reportError("Expected ;");
+		else reportError("Expected ; in newline");
 	}
 	else reportError("Expected newline");
 
@@ -229,10 +205,10 @@ void Parser::parseWriteStatement() {
 	Logger::parserEnter("WriteStatement");
 	if (checkAndEatToken(Tokens::_write)) {
 		if (checkAndEatToken(Tokens::lparen)) {
-			parseActualParameters(); // double check
+			parseActualParameters();
 			if (checkAndEatToken(Tokens::rparen)) {
-				if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("WriteStatement", previousToken().value); //double check 
-				else reportError("Expected ;");
+				if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("WriteStatement", previousToken().value);
+				else reportError("Expected ; in write");
 			}
 			else reportError("Expected )");
 		}
@@ -243,7 +219,7 @@ void Parser::parseWriteStatement() {
 	Logger::parserExit("WriteStatement");
 }
 
-void Parser::parseReadStatement() { //change formatting
+void Parser::parseReadStatement() {
 	Logger::parserEnter("ReadStatement");
 	if (checkAndEatToken(Tokens::_read)) {
 		if (checkAndEatToken(Tokens::lparen)) {
@@ -255,11 +231,11 @@ void Parser::parseReadStatement() { //change formatting
 				if (checkAndEatToken(Tokens::semicolon)) {
 					Logger::parserCreate("ReadStatement", previousToken().value);
 				}
-				else reportError("Expected ;");
+				else reportError("Expected ; in read");
 			}
-			else reportError("Expected )");
+			else reportError("Expected ) in read");
 		}
-		else reportError("Expected (");
+		else reportError("Expected ( in read");
 	}
 	else reportError("Expected read");
 
@@ -275,9 +251,9 @@ void Parser::parseWhileStatement() {
 				parseStatement();
 				Logger::parserCreate("WhileStatement", previousToken().value);
 			}
-			else reportError("Expected )");
+			else reportError("Expected ) in while");
 		}
-		else reportError("Expected (");
+		else reportError("Expected ( in while");
 	}
 	else reportError("Expected while");
 
@@ -287,12 +263,13 @@ void Parser::parseWhileStatement() {
 void Parser::parseReturnStatement() {
 	Logger::parserEnter("ReturnStatement");
 	if (checkAndEatToken(Tokens::_return)) {
-		if (!checkAndEatToken(Tokens::semicolon)) {
+		if (peekSafe().type != Tokens::semicolon) {
+			token t = peekSafe();
 			parseExpression();
 			if (checkAndEatToken(Tokens::semicolon)) {
-				Logger::parserCreate("ReturnStatement", previousToken().value);
+				Logger::parserCreate("ReturnStatement", t.value);
 			}
-			else reportError("Expected ;");
+			else reportError("Expected ; in return");
 		}
 		else Logger::parserCreate("ReturnStatement", previousToken().value);
 	}
@@ -306,7 +283,7 @@ void Parser::parseNullStatement() {
 	if (checkAndEatToken(Tokens::semicolon)) {
 		Logger::parserCreate("NullStatement", previousToken().value);
 	}
-	else reportError("Expected ;");
+	else reportError("Expected ; in nullstatement");
 
 	Logger::parserExit("NullStatement");
 }
@@ -318,17 +295,16 @@ void Parser::parseIfStatement() {
 			parseExpression();
 			if (checkAndEatToken(Tokens::rparen)) {
 				parseStatement();
-				if (!checkAndEatToken(Tokens::_else)) {
-					Logger::parserCreate("IfStatement", previousToken().value);
-				}
-				else { //doublecheck
-					parseStatement();
-					Logger::parserCreate("IfStatement", previousToken().value);
-				}
+				if (peekSafe().type == Tokens::_else) checkAndEatToken(Tokens::_else);
+				Logger::parserCreate("IfStatement", previousToken().value);
+				//else if(checkAndEatToken(Tokens::_else)) {
+				//	parseStatement();
+				//	Logger::parserCreate("IfStatement", previousToken().value);
+				//}
 			}
-			else reportError("Expected )");
+			else reportError("Expected ) in if");
 		}
-		else reportError("Expected (");
+		else reportError("Expected ( in if");
 	}
 	else reportError("Expected if");
 }
@@ -339,7 +315,7 @@ void Parser::parseBreakStatement() {
 		if (checkAndEatToken(Tokens::semicolon)) {
 			Logger::parserCreate("BreakStatement", previousToken().value);
 		}
-		else reportError("Expected ;");
+		else reportError("Expected ; in break");
 	}
 	else reportError("Expected break");
 
@@ -352,22 +328,161 @@ void Parser::parseExpressionStatement() {
 	if (checkAndEatToken(Tokens::semicolon)) {
 		Logger::parserCreate("ExpressionStatement", previousToken().value);
 	}
-	else reportError("Expected ;");
+	else reportError("Expected ; in expression");
 
 	Logger::parserExit("ExpressionStatement");
 }
 
 void Parser::parseCompoundStatement() {
 	Logger::parserEnter("CompoundStatement");
-	
+	if (checkAndEatToken(Tokens::lcurly)) {
+		while(isTypeLit(peekSafe())) {
+			parseType();
+			token t1 = previousToken();
+			parseIdentifier();
+			token t2 = previousToken();
 
+			if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("CompoundStatement", t1.value + " " + t2.value);
+			else reportError("Expected ; in compound");
+		}
+		while (!checkAndEatToken(Tokens::rcurly)) {
+			if (peekSafe().type == Tokens::ERROR) return;
+			if (!hasError) parseStatement();
+		}
+	}
+	else reportError("Expected { in compound");
 	Logger::parserExit("CompoundStatement");
 }
 
-//used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
-bool Parser::checkAndEatToken(Tokens type) {
-	if (eatCurrentToken(type).has_value()) return true;
+void Parser::parseStatement() {
+	Logger::parserEnter("Statement");
+	token nextT = peekSafe();
+	if (nextT.type == Tokens::_break) parseBreakStatement();
+	else if (nextT.type == Tokens::_if) parseIfStatement();
+	else if (nextT.type == Tokens::semicolon) parseNullStatement();
+	else if (nextT.type == Tokens::_return) parseReturnStatement();
+	else if (nextT.type == Tokens::_while) parseWhileStatement();
+	else if (nextT.type == Tokens::_read) parseReadStatement();
+	else if (nextT.type == Tokens::_newline) parseNewLineStatement();
+	else if (nextT.type == Tokens::_write) parseWriteStatement();
+	else if (nextT.type == Tokens::lcurly) parseCompoundStatement();
+	else if (isStartingExpression(nextT)) parseExpressionStatement();
+	else if (nextT.type == Tokens::ERROR || hasError) return;
+	else reportError("Statement unrecongnized");
+	Logger::parserExit("Statement");
+}
+
+void Parser::parseToyCProgram() {
+	if (!parsingStarted) {
+		Logger::parserEnter("ToyCProgram");
+		Logger::parserCreate("Program", "ToyCProgram");
+		parsingStarted = true;
+	}
+	if (peekSafe().type != Tokens::eof && !hasError) parseDefinition();
+	if (peekSafe().type == Tokens::eof) {
+		Logger::parserExit("ToyCProgram");
+		_tokenBuffer.clear();
+		_index = 0;
+	}
+}
+
+void Parser::parseDefinition() {
+	Logger::parserEnter("Definition");
+	if (isTypeLit(peekSafe())) {
+		parseType();
+		if (peekSafe().type == Tokens::ID) {
+			parseIdentifier();
+			if (peekSafe().type == Tokens::lparen) parseFunctionDefinition();
+			else if (peekSafe().type == Tokens::semicolon) checkAndEatToken(Tokens::semicolon);
+			else reportError("Expected a ; in definition");
+
+		}
+		else reportError("Expected identifier after type");
+	}
+	Logger::parserExit("Definition");
+}
+
+void Parser::parseFunctionDefinition() {
+	Logger::parserEnter("FunctionDefinition");
+	parseFunctionHeader();
+	parseFunctionBody();
+	Logger::parserExit("FunctionDefinition");
+
+}
+
+void Parser::parseFunctionHeader() {
+	Logger::parserEnter("FunctionHeader");
+	token t = previousToken();
+	if (checkAndEatToken(Tokens::lparen)) {
+		if (peekSafe().type != Tokens::rparen) {
+			checkAndEatToken(Tokens::rparen);
+			parseFormalParamList();
+			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionHeader", t.value);
+			else reportError("Expected ) in function header");
+		}
+		if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionHeader", t.value);
+	}
+	else reportError("Expected ( in function header");
+
+	Logger::parserExit("FunctionHeader");
+}
+
+void Parser::parseFunctionBody() {
+	Logger::parserEnter("FunctionBody");
+	parseCompoundStatement();
+	Logger::parserExit("FunctionBody");
+}
+
+void Parser::parseFormalParamList() {
+	Logger::parserEnter("FormalParamList");
+	if (isTypeLit(peekSafe())) {
+		parseType();
+		if (peekSafe().type == Tokens::ID) parseIdentifier();
+		else reportError("Expected identifier in formalparamlist");
+
+		while(peekSafe().type == Tokens::comma) {
+			if (isTypeLit(peekSafe())) {
+				parseType();
+				if (peekSafe().type == Tokens::ID) parseIdentifier();
+				else reportError("Expected identifier after type in formalparamlist");
+			}
+		}
+	}
+	Logger::parserExit("FormalParamList");
+}
+
+bool Parser::isTypeLit(const token& t) {
+	if (t.type == Tokens::_int || t.type == Tokens::_char) return true;
 	return false;
+}
+
+//helper to determine if its worth trying to parse a statement
+bool Parser::isStartingExpression(const token& t) {
+	if (t.type == Tokens::number || t.type == Tokens::ID || t.type == Tokens::charliteral
+		|| t.type == Tokens::string || t.type == Tokens::lparen || t.type == Tokens::_not ) return true;
+	if (t.type == Tokens::addop && t.value == "-") return true;
+	return false;
+}
+
+//looks ahead in the buffer, can unpack null values
+std::optional<token> Parser::peek(int offset) const {
+	if (_index + offset >= _tokenBuffer.size()) return {};
+	return _tokenBuffer.at(_index + offset);
+}
+
+//makes it impossible to unpack a null value
+token Parser::peekSafe(const int offset) const {
+	if (peek(offset).has_value()) return peek(offset).value();
+	//Logger::error("peekSafe Unpacked Null");
+	return token {Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false};
+}
+
+//returns the current token and increments the index 
+token Parser::eat() {
+	std::cout << "\t[Ate] " << _index << "\n";
+	token t = _tokenBuffer.at(_index++);
+	Logger::outputToken(t);
+	return t;
 }
 
 //returns null if the current token in the buffer doesnt match 
@@ -376,131 +491,24 @@ std::optional<token> Parser::eatCurrentToken(Tokens type) {
 	return {};
 }
 
-std::optional<token> Parser::peek(int offset) const {
-	if (_index + offset >= _tokenBuffer.size()) return {};
-	return _tokenBuffer.at(_index + offset);
+//used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
+bool Parser::checkAndEatToken(Tokens type) {
+	if (eatCurrentToken(type).has_value()) return true;
+	return false;
 }
 
-//returns the current token and increments the index 
-token Parser::eat() { return _tokenBuffer.at(_index++); }
-
-//returns the last token checkAndEatToken ate
+//returns the previous token in the index, is safe 
 token Parser::previousToken(int offset) {
-	if(_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at( _index - offset);
+	if (_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at(_index - offset);
 	return _tokenBuffer.at(0);
 }
 
 //for debugging, and maybe error messages
-void Parser::outputTokenLine() const { Logger::outputTokens(_tokenBuffer); }
+void Parser::outputTokenLine() const {Logger::outputTokens(_tokenBuffer); }
 
 void Parser::reportError(const std::string& message) {
+	hasError = true;
 	Logger::outputTokens(_tokenBuffer);
 	Logger::error(message);
-	hasError = true;
 }
 
-
-//void Parser::parseStatement() {
-//	Logger::parserEnter("Statement");
-//	//expression
-//
-//	//break
-//	if(checkAndEatToken(Tokens::_break)) {
-//		Logger::parserEnter("Break");
-//		if (checkAndEatToken(Tokens::semicolon)) {
-//			Logger::parserExit("Break");
-//		}
-//	}
-//
-//	//compound
-//
-//	//if
-//
-//	//null
-//	if (checkAndEatToken(Tokens::semicolon)) {
-//		Logger::parser("Null statement");
-//	}
-//	//return
-//	if (checkAndEatToken(Tokens::_return)) {
-//		Logger::parser("Entering return statement");
-//		if (checkAndEatToken(Tokens::semicolon)) {
-//			Logger::parser("Exiting return statement");
-//		}
-//	}
-//	//while
-//	if (checkAndEatToken(Tokens::_while)) {
-//		Logger::parserEnter("While");
-//		if (checkAndEatToken(Tokens::lparen)) {
-//			//parseExpression();
-//			if (checkAndEatToken(Tokens::rparen)) {
-//				//TODO: parseStatement();
-//			}else {
-//				reportError("missed )");
-//			}
-//		}else {
-//			reportError("missed while");
-//		}
-//		Logger::parserExit("While");
-//	}
-//	//read
-//
-//	//write
-//
-//	//newline
-//
-//	//expression
-//
-//	//relop
-//
-//	//simple
-//
-//}
-
-//void Parser::parseFunctionCall() {
-//	return;
-//	while(peek().has_value() && peek().value().type != Tokens::rparen) {
-//		
-//	}
-//}
-
-//void Parser::parseIntExpression() {
-//    Logger::scanner("Entering parseIntDeclaration");	
-//    if (!eatCurrentToken(Tokens::_int).has_value()) {
-//        reportError("Expected int");
-//        return;
-//    }
-//    if (!eatCurrentToken(Tokens::ID).has_value()) {
-//        reportError("Expected identifier after int");
-//		return;
-//    }
-//    if (!eatCurrentToken(Tokens::assignop).has_value()) {
-//        reportError("Expected = after identifier");
-//        return;
-//    }
-//    if (!eatCurrentToken(Tokens::number).has_value()) {
-//        reportError("Expected number after =");
-//        return;
-//    }
-//    if (!eatCurrentToken(Tokens::semicolon).has_value()) {
-//        reportError("cmon man");
-//    }
-//	Logger::parser("Generated int");
-//	Logger::parser("Exiting parseIntExpression");
-//
-//}
-
-//void Parser::parseExpression() {
-//	Logger::scanner("Entering Expression");
-//	if (!checkAndEatToken(Tokens::number)) reportError("Expected number");
-//	else if (checkAndEatToken(Tokens::lparen)){
-//		parseExpression();
-//		if (!checkAndEatToken(Tokens::rparen)) Logger::scanner("expected )");
-//	}
-//	else if (checkAndEatToken(Tokens::ID)) Logger::scanner("Created expression");
-//	else {
-//		reportError("Expected something");
-//		return;
-//	}
-//	Logger::parser("Generated expression");
-//	Logger::parserExit("Expression");
-//}

@@ -40,17 +40,20 @@ void Logger::parserExit(const std::string& message) {
 }
 
 void Logger::outputToken(const token t) {
-	if (logLevel == Level::Parser) {
-		std::cout << "[TOKEN] " << t.typeString << " " << t.value << " " << t.lineLoc << "\n";
-	}
+	/*if (logLevel == Level::Parser) {
+	std::cout << "[EATING] " << t.typeString << " " << t.value << "\n";
+	}*/
 }
 
 void Logger::outputTokens(const std::vector<token> t) {
-	std::cout << "\t" << t.front().lineLoc << ": ";
-	for (auto x : t) {
-		std::cout << x.value;
-	}
 	std::cout << "\n";
+	std::cout << "\t" << t.front().lineLoc << ":\t";
+
+	for (size_t i = 0; i < t.size(); ++i) std::cout << i << "\t";
+	std::cout << "\n\t\t";
+
+	for (const auto& x : t) std::cout << x.value << "\t";
+	std::cout << "\n\n";
 }
 
 void Logger::debug(const std::string& message) {

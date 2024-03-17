@@ -36,7 +36,8 @@ enum class Tokens {
 	_read,
 	_continue,
 	_break,
-	_newline
+	_newline,
+	ERROR
 };
 
 struct token {

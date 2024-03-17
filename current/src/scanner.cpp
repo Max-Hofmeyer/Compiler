@@ -217,7 +217,7 @@ void Scanner::scan() {
 			}
 			//SEMICOLON (;)
 			else if (peek().value() == ';') {
-				sendToken(Tokens::semicolon, line, "SEMICOLON", ";", false);
+				sendToken(Tokens::semicolon, line, "SEMICOLON", ";", true);
 				eat();
 			}
 			//RELOP(!=) or NOT(!)
