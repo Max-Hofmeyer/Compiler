@@ -1,7 +1,0 @@
-int var;
-char var2;
-myFristFunction();                    
-mySecondFunction(123 + 123);                   
-myThirdFunction(123, 'b', "hello");
-myLastFunction(1 + 2, 3 * 4); 
-outerFunction(innerOneFunction(5), innerTwoFunction(6, 7));

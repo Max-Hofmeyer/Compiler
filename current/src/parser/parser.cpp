@@ -28,20 +28,19 @@ void Parser::Update(const token& t) {
 		//}
 		//else _tokenBuffer.emplace_back(t);
 		_tokenBuffer.emplace_back(t);
-		if(t.type == Tokens::eof) {
+		if (t.type == Tokens::eof) {
 			parseLine();
 		}
 		//while(!_tokenBuffer.empty()) {
 		//	const token& nextT = _tokenBuffer.front();
 
 		//}
-
 	}
 }
 
 void Parser::parseLine() {
 	Logger::outputTokens(_tokenBuffer);
-	while (peekSafe().type != Tokens::eof) parseToyCProgram();
+	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty()) parseToyCProgram();
 }
 
 void Parser::parsePrimary() {
@@ -172,32 +171,26 @@ void Parser::parseActualParameters() {
 void Parser::parseFunctionCall() {
 	Logger::parserEnter("FunctionCall");
 	token t = previousToken();
-	if (checkAndEatToken(Tokens::lparen)) {
-		if (peekSafe(1).type != Tokens::rparen) {
-			parseActualParameters();
-			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
-			else reportError("Expected ) in FunctionCall");
-		}
-		else {
-			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
-		}
 
-	}
-	//else reportError("Expected (");
+	if (peekSafe().type != Tokens::lparen) reportError("Expected ( in functioncall");
+	eatCurrentToken(Tokens::lparen);
+
+	if (peekSafe().type != Tokens::rparen) parseActualParameters();
+	if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
+	else reportError("Expected ) in functioncall");
 
 	Logger::parserExit("FunctionCall");
 }
 
 void Parser::parseNewLineStatement() {
 	Logger::parserEnter("NewLineStatement");
-	if (checkAndEatToken(Tokens::_newline)) {
-		if (checkAndEatToken(Tokens::semicolon)) {
-			Logger::parserCreate("NewLineStatement", " ");
-		}
-		else reportError("Expected ; in newline");
-	}
-	else reportError("Expected newline");
+	if (peekSafe().type != Tokens::_newline) reportError("Expected newline keyword");
+	eatCurrentToken(Tokens::_newline);
 
+	if (peekSafe().type != Tokens::semicolon) reportError("Expected ; after newline");
+	eatCurrentToken(Tokens::semicolon);
+
+	Logger::parserCreate("NewLineStatement", " ");
 	Logger::parserExit("NewLineStatement");
 }
 
@@ -224,9 +217,7 @@ void Parser::parseReadStatement() {
 	if (checkAndEatToken(Tokens::_read)) {
 		if (checkAndEatToken(Tokens::lparen)) {
 			parseIdentifier();
-			while (checkAndEatToken(Tokens::comma)) {
-				parseIdentifier();
-			}
+			while (checkAndEatToken(Tokens::comma)) parseIdentifier();
 			if (checkAndEatToken(Tokens::rparen)) {
 				if (checkAndEatToken(Tokens::semicolon)) {
 					Logger::parserCreate("ReadStatement", previousToken().value);
@@ -262,19 +253,16 @@ void Parser::parseWhileStatement() {
 
 void Parser::parseReturnStatement() {
 	Logger::parserEnter("ReturnStatement");
-	if (checkAndEatToken(Tokens::_return)) {
-		if (peekSafe().type != Tokens::semicolon) {
-			token t = peekSafe();
-			parseExpression();
-			if (checkAndEatToken(Tokens::semicolon)) {
-				Logger::parserCreate("ReturnStatement", t.value);
-			}
-			else reportError("Expected ; in return");
-		}
-		else Logger::parserCreate("ReturnStatement", previousToken().value);
-	}
-	else reportError("Expected return");
+	if (peekSafe().type != Tokens::_return) reportError("Expected return keyword");
+	checkAndEatToken(Tokens::_return);
 
+	if (peekSafe().type != Tokens::semicolon) {
+		token t = peekSafe();
+		parseExpression();
+		if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("ReturnStatement", t.value);
+		else reportError("Expected ; in return");
+	}
+	else Logger::parserCreate("ReturnStatement", " ");
 	Logger::parserExit("ReturnStatement");
 }
 
@@ -336,13 +324,14 @@ void Parser::parseExpressionStatement() {
 void Parser::parseCompoundStatement() {
 	Logger::parserEnter("CompoundStatement");
 	if (checkAndEatToken(Tokens::lcurly)) {
-		while(isTypeLit(peekSafe())) {
+		while (isTypeLit(peekSafe())) {
 			parseType();
 			token t1 = previousToken();
 			parseIdentifier();
 			token t2 = previousToken();
 
-			if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("CompoundStatement", t1.value + " " + t2.value);
+			if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate(
+				"CompoundStatement", t1.value + " " + t2.value);
 			else reportError("Expected ; in compound");
 		}
 		while (!checkAndEatToken(Tokens::rcurly)) {
@@ -369,6 +358,7 @@ void Parser::parseStatement() {
 	else if (isStartingExpression(nextT)) parseExpressionStatement();
 	else if (nextT.type == Tokens::ERROR || hasError) return;
 	else reportError("Statement unrecongnized");
+	Logger::parserCreate("Statement");
 	Logger::parserExit("Statement");
 }
 
@@ -387,15 +377,20 @@ void Parser::parseToyCProgram() {
 }
 
 void Parser::parseDefinition() {
+	if (hasError) return;
 	Logger::parserEnter("Definition");
 	if (isTypeLit(peekSafe())) {
 		parseType();
+		token t1 = previousToken();
 		if (peekSafe().type == Tokens::ID) {
 			parseIdentifier();
+			token t2 = previousToken();
 			if (peekSafe().type == Tokens::lparen) parseFunctionDefinition();
-			else if (peekSafe().type == Tokens::semicolon) checkAndEatToken(Tokens::semicolon);
-			else reportError("Expected a ; in definition");
-
+			else if (peekSafe().type != Tokens::semicolon) reportError("Expected a ; in definition");
+			else {
+				checkAndEatToken(Tokens::semicolon);
+				Logger::parserCreate("Definition", t1.value + " " + t2.value);
+			}
 		}
 		else reportError("Expected identifier after type");
 	}
@@ -406,8 +401,8 @@ void Parser::parseFunctionDefinition() {
 	Logger::parserEnter("FunctionDefinition");
 	parseFunctionHeader();
 	parseFunctionBody();
+	Logger::parserCreate("FunctionDefinition", " ");
 	Logger::parserExit("FunctionDefinition");
-
 }
 
 void Parser::parseFunctionHeader() {
@@ -430,6 +425,7 @@ void Parser::parseFunctionHeader() {
 void Parser::parseFunctionBody() {
 	Logger::parserEnter("FunctionBody");
 	parseCompoundStatement();
+	Logger::parserCreate("FunctionBody");
 	Logger::parserExit("FunctionBody");
 }
 
@@ -440,7 +436,7 @@ void Parser::parseFormalParamList() {
 		if (peekSafe().type == Tokens::ID) parseIdentifier();
 		else reportError("Expected identifier in formalparamlist");
 
-		while(peekSafe().type == Tokens::comma) {
+		while (peekSafe().type == Tokens::comma) {
 			if (isTypeLit(peekSafe())) {
 				parseType();
 				if (peekSafe().type == Tokens::ID) parseIdentifier();
@@ -448,6 +444,7 @@ void Parser::parseFormalParamList() {
 			}
 		}
 	}
+	Logger::parserCreate("FormalParamList");
 	Logger::parserExit("FormalParamList");
 }
 
@@ -459,7 +456,8 @@ bool Parser::isTypeLit(const token& t) {
 //helper to determine if its worth trying to parse a statement
 bool Parser::isStartingExpression(const token& t) {
 	if (t.type == Tokens::number || t.type == Tokens::ID || t.type == Tokens::charliteral
-		|| t.type == Tokens::string || t.type == Tokens::lparen || t.type == Tokens::_not ) return true;
+		|| t.type == Tokens::string || t.type == Tokens::lparen || t.type == Tokens::_not)
+		return true;
 	if (t.type == Tokens::addop && t.value == "-") return true;
 	return false;
 }
@@ -474,12 +472,11 @@ std::optional<token> Parser::peek(int offset) const {
 token Parser::peekSafe(const int offset) const {
 	if (peek(offset).has_value()) return peek(offset).value();
 	//Logger::error("peekSafe Unpacked Null");
-	return token {Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false};
+	return token{Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false};
 }
 
 //returns the current token and increments the index 
 token Parser::eat() {
-	std::cout << "\t[Ate] " << _index << "\n";
 	token t = _tokenBuffer.at(_index++);
 	Logger::outputToken(t);
 	return t;
@@ -492,6 +489,7 @@ std::optional<token> Parser::eatCurrentToken(Tokens type) {
 }
 
 //used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
+//worst mistake of all time
 bool Parser::checkAndEatToken(Tokens type) {
 	if (eatCurrentToken(type).has_value()) return true;
 	return false;
@@ -504,11 +502,12 @@ token Parser::previousToken(int offset) {
 }
 
 //for debugging, and maybe error messages
-void Parser::outputTokenLine() const {Logger::outputTokens(_tokenBuffer); }
+void Parser::outputTokenLine() const {
+	//Logger::outputTokens(_tokenBuffer);
+}
 
 void Parser::reportError(const std::string& message) {
 	hasError = true;
-	Logger::outputTokens(_tokenBuffer);
+	//Logger::outputTokens(_tokenBuffer);
 	Logger::error(message);
 }
-
