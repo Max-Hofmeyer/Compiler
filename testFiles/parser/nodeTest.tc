@@ -1,0 +1,5 @@
+int main(){
+	int mom;
+	mom = 1;
+	return mom;
+}

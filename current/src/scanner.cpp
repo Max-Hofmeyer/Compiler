@@ -76,6 +76,7 @@ void Scanner::scan() {
 			}
 			else if (buffer == "newline") {
 				sendToken(Tokens::_newline, line, "NEWLINE", buffer, true);
+				buffer.clear();
 			}
 			else {
 				sendToken(Tokens::ID, line, "ID", buffer, true);

@@ -173,7 +173,7 @@ void Parser::parseFunctionCall() {
 	token t = previousToken();
 
 	if (peekSafe().type != Tokens::lparen) reportError("Expected ( in functioncall");
-	eatCurrentToken(Tokens::lparen);
+	checkAndEatToken(Tokens::lparen);
 
 	if (peekSafe().type != Tokens::rparen) parseActualParameters();
 	if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
@@ -285,10 +285,6 @@ void Parser::parseIfStatement() {
 				parseStatement();
 				if (peekSafe().type == Tokens::_else) checkAndEatToken(Tokens::_else);
 				Logger::parserCreate("IfStatement", previousToken().value);
-				//else if(checkAndEatToken(Tokens::_else)) {
-				//	parseStatement();
-				//	Logger::parserCreate("IfStatement", previousToken().value);
-				//}
 			}
 			else reportError("Expected ) in if");
 		}

@@ -5,7 +5,7 @@ int factorial(int n) {
     else
         return n * factorial(n - 1);
 }
-/*
+
 int isEven(int number) {
     if ((number % 2) == 0)
         return 1;

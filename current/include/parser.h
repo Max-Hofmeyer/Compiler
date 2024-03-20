@@ -4,6 +4,7 @@
 #include <optional>
 #include "logger.h"
 #include "subscriber.h"
+#include "ast.hpp"
 
 class Parser : public SubscriberInterface {
 public:
@@ -29,11 +30,11 @@ private:
 	void parseReadStatement();
 	void parseWhileStatement();
 	void parseReturnStatement();
-	void parseNullStatement();
-	void parseIfStatement();
-	void parseBreakStatement();
+	void parseNullStatement(); //
+	void parseIfStatement(); 
+	void parseBreakStatement(); //
 	void parseExpressionStatement();
-	void parseCompoundStatement();
+	void parseCompoundStatement(); // 
 	void parseStatement();
 
 	/* Third section */
