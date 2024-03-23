@@ -11,41 +11,38 @@ public:
 	void Update(const token& t);
 	bool hasError = false;
 
-private: 
-	/* First section */
+private:
 	void parseLine();
-	void parsePrimary();
-	void parseType();
-	void parseIdentifier();
-	void parseTerm();
-	void parseSimpleExpression();
-	void parseRelopExpression();
-	void parseExpression();
-	void parseActualParameters();
-	void parseFunctionCall();
 
-	/* Second section */
-	void parseNewLineStatement();
-	void parseWriteStatement();
-	void parseReadStatement();
-	void parseWhileStatement();
-	void parseReturnStatement();
-	void parseNullStatement(); //
-	void parseIfStatement(); 
-	void parseBreakStatement(); //
-	void parseExpressionStatement();
-	void parseCompoundStatement(); // 
-	void parseStatement();
+	/* Syntax definitions */
+	std::unique_ptr<NodeToyCProgram> parseToyCProgram();
+	std::unique_ptr<NodeDefinition> parseDefinition();
+	token parseType();
+	std::unique_ptr<NodeFunctionDefinition> parseFunctionDefinition();
+	std::unique_ptr<NodeFunctionHeader> parseFunctionHeader();
+	std::unique_ptr<NodeFunctionBody> parseFunctionBody();
+	std::unique_ptr<NodeFormalParamList> parseFormalParamList();
+	std::unique_ptr<NodeStatement> parseStatement();
+	std::unique_ptr<NodeExpressionStatement> parseExpressionStatement();
+	std::unique_ptr<NodeBreakStatement> parseBreakStatement();
+	std::unique_ptr<NodeCompoundStatement> parseCompoundStatement();
+	std::unique_ptr<NodeIfStatement> parseIfStatement();
+	std::unique_ptr<NodeNullStatement> parseNullStatement();
+	std::unique_ptr<NodeReturnStatement> parseReturnStatement();
+	std::unique_ptr<NodeWhileStatement> parseWhileStatement();
+	std::unique_ptr<NodeReadStatement> parseReadStatement();
+	std::unique_ptr<NodeWriteStatement> parseWriteStatement();
+	std::unique_ptr<NodeNewLineStatement> parseNewLineStatement();
+	std::unique_ptr<NodeExpression> parseExpression();
+	std::unique_ptr<NodeRelopExpression> parseRelopExpression();
+	std::unique_ptr<NodeSimpleExpression> parseSimpleExpression();
+	std::unique_ptr<NodeTerm> parseTerm();
+	std::unique_ptr<NodePrimary> parsePrimary();
+	std::unique_ptr<NodeFunctionCall> parseFunctionCall();
+	std::unique_ptr<NodeActualParameters> parseActualParameters();
+	token parseIdentifier();
 
-	/* Third section */
-	void parseToyCProgram();
-	void parseDefinition();
-	void parseFunctionDefinition();
-	void parseFunctionHeader();
-	void parseFunctionBody();
-	void parseFormalParamList();
-
-	/* Global class variables */
+	/* Class variables */
 	std::vector<token> _tokenBuffer;
 	size_t _index = 0;
 	int currentLine = 0;
@@ -62,13 +59,10 @@ private:
 	std::optional<token> eatCurrentToken(Tokens type);
 	bool checkAndEatToken(Tokens type);
 	token previousToken(int offset = 1);
+	token returnBadToken() const;
+
 
 	/* Error reporting and debugging */
 	void outputTokenLine() const;
 	void reportError(const std::string& message);
-
-	//const std::string& name, const std::string& data = ""
-	//void parseTerminatedStatement();
-	//void parseBreakStatement();
-	//void parseIntExpression();
 };

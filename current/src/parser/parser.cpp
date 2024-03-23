@@ -43,186 +43,292 @@ void Parser::parseLine() {
 	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty()) parseToyCProgram();
 }
 
-void Parser::parsePrimary() {
-	Logger::parserEnter("Primary");
-	if (peekSafe().type == Tokens::ID) {
-		parseIdentifier();
-		if (peekSafe().type == Tokens::lparen) parseFunctionCall();
+std::unique_ptr<NodeToyCProgram> Parser::parseToyCProgram() {
+	if (!parsingStarted) {
+		Logger::parserEnter("ToyCProgram");
+		parsingStarted = true;
 	}
-
-	//number
-	else if (checkAndEatToken(Tokens::number)) {
-		Logger::parserCreate("number", previousToken().value);
+	auto program = std::make_unique<NodeToyCProgram>();
+	if (peekSafe().type != Tokens::eof && !hasError) {
+		auto d = parseDefinition();
+		if (d) program->addRHS(std::move(d));
 	}
-
-	//charliteral
-	else if (checkAndEatToken(Tokens::charliteral)) {
-		Logger::parserCreate("char", previousToken().value);
+	if (peekSafe().type == Tokens::eof) {
+		Logger::parserExit("ToyCProgram");
+		_tokenBuffer.clear();
+		_index = 0;
 	}
-
-	//string
-	else if (checkAndEatToken(Tokens::string)) {
-		Logger::parserCreate("string", previousToken().value);
-	}
-
-	//expression
-	else if (checkAndEatToken(Tokens::lparen)) {
-		parseExpression();
-		if (!checkAndEatToken(Tokens::rparen)) reportError("expected )");
-	}
-
-	//primary (-)
-	else if (checkAndEatToken(Tokens::addop)) {
-		//might use peek() instead
-		if (previousToken().value == "-") {
-			Logger::parserEnter("subtraction primary");
-			parsePrimary();
-			Logger::parserCreate("subtraction primary", previousToken().value);
-			Logger::parserExit("subtraction primary");
-		}
-		else reportError("Expected '-' addop for primary");
-	}
-
-	//primary (not)
-	else if (checkAndEatToken(Tokens::_not)) {
-		Logger::parserEnter("not primary");
-		parsePrimary();
-		Logger::parserExit("not primary");
-	}
-
-	else reportError("Unexpected primary");
-	Logger::parserExit("Primary");
+	return program;
 }
 
-void Parser::parseType() {
+std::unique_ptr<NodeDefinition> Parser::parseDefinition() {
+	if (hasError) return nullptr;
+	std::unique_ptr<NodeDeclaration> declaration = nullptr;
+	std::unique_ptr<NodeFunctionDefinition> function = nullptr;
+
+	Logger::parserEnter("Definition");
+	if (isTypeLit(peekSafe())) {
+		token type = parseType();
+		if (peekSafe().type == Tokens::ID) {
+			token id = parseIdentifier();
+			declaration = std::make_unique<NodeDeclaration>(type, id);
+			if (peekSafe().type == Tokens::lparen) function = parseFunctionDefinition();
+			else if (peekSafe().type != Tokens::semicolon) reportError("Expected a ; in definition");
+			else checkAndEatToken(Tokens::semicolon);
+		}
+		else reportError("Expected identifier after type");
+	}
+	Logger::parserExit("Definition");
+	if (function) return std::make_unique<NodeDefinition>(std::move(declaration), std::move(function));
+	if (declaration) return std::make_unique<NodeDefinition>(std::move(declaration));
+
+	reportError("Returning null in parsedefinition");
+	return nullptr;
+}
+
+token Parser::parseType() {
+	if (hasError) return returnBadToken();
 	Logger::parserEnter("Type");
-	if (checkAndEatToken(Tokens::_int)) {
-		Logger::parserCreate("Int", previousToken().value);
+	token t = peekSafe();
+	if (t.type == Tokens::_int || t.type == Tokens::_char) {
+		checkAndEatToken(t.type);
+		Logger::parserExit("Type");
+		return t;
 	}
-	if (checkAndEatToken(Tokens::_char)) {
-		Logger::parserCreate("Char", previousToken().value);
-	}
-	Logger::parserExit("Type");
+	reportError("type not found in parsetype");
+	return returnBadToken();
+
 }
 
-void Parser::parseIdentifier() {
-	Logger::parserEnter("Identifier");
-	if (checkAndEatToken(Tokens::ID)) {
-		Logger::parserCreate("Identifier", previousToken().value);
-	}
-	Logger::parserExit("Identifier");
+std::unique_ptr<NodeFunctionDefinition> Parser::parseFunctionDefinition() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("FunctionDefinition");
+	std::unique_ptr<NodeFunctionHeader> header = parseFunctionHeader();
+	std::unique_ptr<NodeFunctionBody> body = parseFunctionBody();
+	Logger::parserExit("FunctionDefinition");
+
+	return std::make_unique<NodeFunctionDefinition>(std::move(header), std::move(body));
 }
 
-void Parser::parseTerm() {
-	Logger::parserEnter("Term");
-	parsePrimary();
-	while (checkAndEatToken(Tokens::mulop)) {
-		token t = previousToken();
-		parsePrimary();
-		Logger::parserCreate("Term", t.value);
-	}
-	Logger::parserExit("Term");
-}
+std::unique_ptr<NodeFunctionHeader> Parser::parseFunctionHeader() {
+	if (hasError) return nullptr;
+	std::unique_ptr<NodeFormalParamList> param = nullptr;
 
-void Parser::parseSimpleExpression() {
-	Logger::parserEnter("SimpleExpression");
-	parseTerm();
-	while (checkAndEatToken(Tokens::addop)) {
-		token t = previousToken();
-		parseTerm();
-		Logger::parserCreate("SimpleExpression", t.value);
-	}
-	Logger::parserExit("SimpleExpression");
-}
-
-void Parser::parseRelopExpression() {
-	Logger::parserEnter("RelopExpression");
-	parseSimpleExpression();
-	while (checkAndEatToken(Tokens::relop)) {
-		token t = previousToken();
-		parseSimpleExpression();
-		Logger::parserCreate("RelopExpression", t.value);
-	}
-	Logger::parserExit("RelopExpression");
-}
-
-void Parser::parseExpression() {
-	Logger::parserEnter("Expression");
-	parseRelopExpression();
-	if (peekSafe().type == Tokens::assignop) {
-		token t = peekSafe();
-		checkAndEatToken(Tokens::assignop);
-		parseRelopExpression();
-		Logger::parserCreate("Expression", t.value);
-	}
-	Logger::parserExit("Expression");
-}
-
-void Parser::parseActualParameters() {
-	Logger::parserEnter("ActualParameters");
-	parseExpression();
-	while (checkAndEatToken(Tokens::comma)) {
-		parseExpression();
-		Logger::parserCreate("ActualParameters");
-	}
-	Logger::parserExit("ActualParameters");
-}
-
-void Parser::parseFunctionCall() {
-	Logger::parserEnter("FunctionCall");
-	token t = previousToken();
-
-	if (peekSafe().type != Tokens::lparen) reportError("Expected ( in functioncall");
-	checkAndEatToken(Tokens::lparen);
-
-	if (peekSafe().type != Tokens::rparen) parseActualParameters();
-	if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionCall", t.value);
-	else reportError("Expected ) in functioncall");
-
-	Logger::parserExit("FunctionCall");
-}
-
-void Parser::parseNewLineStatement() {
-	Logger::parserEnter("NewLineStatement");
-	if (peekSafe().type != Tokens::_newline) reportError("Expected newline keyword");
-	eatCurrentToken(Tokens::_newline);
-
-	if (peekSafe().type != Tokens::semicolon) reportError("Expected ; after newline");
-	eatCurrentToken(Tokens::semicolon);
-
-	Logger::parserCreate("NewLineStatement", " ");
-	Logger::parserExit("NewLineStatement");
-}
-
-void Parser::parseWriteStatement() {
-	Logger::parserEnter("WriteStatement");
-	if (checkAndEatToken(Tokens::_write)) {
-		if (checkAndEatToken(Tokens::lparen)) {
-			parseActualParameters();
-			if (checkAndEatToken(Tokens::rparen)) {
-				if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("WriteStatement", previousToken().value);
-				else reportError("Expected ; in write");
-			}
-			else reportError("Expected )");
+	Logger::parserEnter("FunctionHeader");
+	if (checkAndEatToken(Tokens::lparen)) {
+		if (peekSafe().type != Tokens::rparen) {
+			checkAndEatToken(Tokens::rparen);
+			param = parseFormalParamList();
+			if (checkAndEatToken(Tokens::rparen)) return std::make_unique<NodeFunctionHeader>(std::move(param));
+			reportError("Expected ) in function header");
 		}
-		else reportError("Expected (");
+		if (checkAndEatToken(Tokens::rparen)) return std::make_unique<NodeFunctionHeader>(std::move(param));
 	}
-	else reportError("Expected write");
-
-	Logger::parserExit("WriteStatement");
+	else reportError("Expected ( in function header");
+	Logger::parserExit("FunctionHeader");
+	return nullptr;
 }
 
-void Parser::parseReadStatement() {
+std::unique_ptr<NodeFunctionBody> Parser::parseFunctionBody() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("FunctionBody");
+	auto stmt = parseCompoundStatement();
+	Logger::parserExit("FunctionBody");
+	if (stmt) return std::make_unique<NodeFunctionBody>(std::move(stmt));
+	return nullptr;
+}
+
+std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
+	if (hasError) return nullptr;
+	std::unique_ptr<NodeFormalParamList> formal = nullptr;
+
+	Logger::parserEnter("FormalParamList");
+	if (isTypeLit(peekSafe())) {
+		token type = parseType();
+		if (peekSafe().type == Tokens::ID) {
+			token id = parseIdentifier();
+			auto declaration = std::make_unique<NodeDeclaration>(type, id);
+			formal = std::make_unique<NodeFormalParamList>(std::move(declaration));
+		}
+		else reportError("Expected identifier in formalparamlist");
+
+		while (peekSafe().type == Tokens::comma) {
+			if (isTypeLit(peekSafe())) {
+				token nType = parseType();
+				if (peekSafe().type == Tokens::ID) {
+					token nId = parseIdentifier();
+					auto nDeclaration = std::make_unique<NodeDeclaration>(nType, nId);
+					formal->addRHS(std::move(nDeclaration));
+				}
+				else reportError("Expected identifier after type in formalparamlist");
+			}
+		}
+	}
+	Logger::parserExit("FormalParamList");
+	return formal;
+}
+
+std::unique_ptr<NodeStatement> Parser::parseStatement() {
+	if (hasError) return nullptr;
+	std::unique_ptr<NodeStatement> stmt = nullptr;
+	Logger::parserEnter("Statement");
+	token nextT = peekSafe();
+
+	if (nextT.type == Tokens::_break) stmt = std::make_unique<NodeStatement>(parseBreakStatement());
+	else if (nextT.type == Tokens::_if) stmt = std::make_unique<NodeStatement>(parseIfStatement());
+	else if (nextT.type == Tokens::semicolon) stmt = std::make_unique<NodeStatement>(parseNullStatement());
+	else if (nextT.type == Tokens::_return) stmt = std::make_unique<NodeStatement>(parseReturnStatement());
+	else if (nextT.type == Tokens::_while) stmt = std::make_unique<NodeStatement>(parseWhileStatement());
+	else if (nextT.type == Tokens::_read) stmt = std::make_unique<NodeStatement>(parseReadStatement());
+	else if (nextT.type == Tokens::_newline) stmt = std::make_unique<NodeStatement>(parseNewLineStatement());
+	else if (nextT.type == Tokens::_write) stmt = std::make_unique<NodeStatement>(parseWriteStatement());
+	else if (nextT.type == Tokens::lcurly) stmt = std::make_unique<NodeStatement>(parseCompoundStatement());
+	else if (isStartingExpression(nextT)) stmt = std::make_unique<NodeStatement>(parseExpressionStatement());
+	else reportError("Statement unrecongnized");
+	Logger::parserExit("Statement");
+	return stmt;
+}
+
+std::unique_ptr<NodeExpressionStatement> Parser::parseExpressionStatement() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("ExpressionStatement");
+	auto expr = parseExpression();
+	if (checkAndEatToken(Tokens::semicolon)) {
+		return std::make_unique<NodeExpressionStatement>(std::move(expr));
+	}
+	reportError("Expected ; in expression");
+	Logger::parserExit("ExpressionStatement");
+	return nullptr;
+}
+
+std::unique_ptr<NodeBreakStatement> Parser::parseBreakStatement() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("BreakStatement");
+	if (checkAndEatToken(Tokens::_break)) {
+		if (checkAndEatToken(Tokens::semicolon)) return std::make_unique<NodeBreakStatement>();
+		reportError("Expected ; in break");
+	}
+	reportError("Expected break");
+	Logger::parserExit("BreakStatement");
+	return nullptr;
+}
+
+std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
+	if (hasError) return nullptr;
+	auto compound = std::make_unique<NodeCompoundStatement>();
+
+	Logger::parserEnter("CompoundStatement");
+	if (checkAndEatToken(Tokens::lcurly)) {
+		while (isTypeLit(peekSafe())) {
+			token type = parseType(); 
+			token id = parseIdentifier();
+			auto d = std::make_unique<NodeDeclaration>(type, id);
+			if (checkAndEatToken(Tokens::semicolon)) {
+				if (d) compound->addDeclaration(std::move(d));
+			}
+			else reportError("Expected ; in compound");
+		}
+		while (!checkAndEatToken(Tokens::rcurly)) {
+			auto s = parseStatement();
+			if (s) compound->addStatement(std::move(s));
+			
+		}
+	}
+	else reportError("Expected { in compound");
+	Logger::parserExit("CompoundStatement");
+	return compound;
+}
+
+std::unique_ptr<NodeIfStatement> Parser::parseIfStatement() {
+	if (hasError) return nullptr;
+
+	Logger::parserEnter("IfStatement");
+	if (checkAndEatToken(Tokens::_if)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			auto expr = parseExpression();
+			if (checkAndEatToken(Tokens::rparen)) {
+				auto stmt = parseStatement();
+				if (checkAndEatToken(Tokens::_else)) {
+					auto eStmt = parseStatement();
+					return std::make_unique<NodeIfStatement>(std::move(expr), std::move(stmt), std::move(eStmt));
+				}
+				return std::make_unique<NodeIfStatement>(std::move(expr), std::move(stmt));
+			}
+			reportError("Expected ) in if");
+		}
+		else reportError("Expected ( in if");
+	}
+	else reportError("Expected if");
+
+	return nullptr;
+}
+
+std::unique_ptr<NodeNullStatement> Parser::parseNullStatement() {
+	if (hasError) return nullptr;
+
+	Logger::parserEnter("NullStatement");
+	if (checkAndEatToken(Tokens::semicolon)) return std::make_unique<NodeNullStatement>();
+	reportError("Expected ; in nullstatement");
+	Logger::parserExit("NullStatement");
+
+	return nullptr;
+}
+
+std::unique_ptr<NodeReturnStatement> Parser::parseReturnStatement() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("ReturnStatement");
+	if (peekSafe().type != Tokens::_return) reportError("Expected return keyword");
+	checkAndEatToken(Tokens::_return);
+
+	if (peekSafe().type != Tokens::semicolon) {
+		auto expr = parseExpression();
+		if (checkAndEatToken(Tokens::semicolon)) return std::make_unique<NodeReturnStatement>(std::move(expr));
+		else reportError("Expected ; in return");
+
+	}
+	else {
+		checkAndEatToken(Tokens::semicolon);
+		return std::make_unique<NodeReturnStatement>();
+	}
+	Logger::parserExit("ReturnStatement");
+	return nullptr;
+}
+
+std::unique_ptr<NodeWhileStatement> Parser::parseWhileStatement() {
+	if (hasError) return nullptr;
+
+	Logger::parserEnter("WhileStatement");
+	if (checkAndEatToken(Tokens::_while)) {
+		if (checkAndEatToken(Tokens::lparen)) {
+			auto expr = parseExpression();
+			if (checkAndEatToken(Tokens::rparen)) {
+				auto stmt = parseStatement();
+				return std::make_unique<NodeWhileStatement>(std::move(expr), std::move(stmt));
+			}
+			reportError("Expected ) in while");
+		}
+		else reportError("Expected ( in while");
+	}
+	else reportError("Expected while");
+
+	Logger::parserExit("WhileStatement");
+	return nullptr;
+}
+
+std::unique_ptr<NodeReadStatement> Parser::parseReadStatement() {
+	if (hasError) return nullptr;
+
 	Logger::parserEnter("ReadStatement");
 	if (checkAndEatToken(Tokens::_read)) {
 		if (checkAndEatToken(Tokens::lparen)) {
-			parseIdentifier();
-			while (checkAndEatToken(Tokens::comma)) parseIdentifier();
+			token id = parseIdentifier();
+			auto read = std::make_unique<NodeReadStatement>(std::move(id));
+			while (checkAndEatToken(Tokens::comma)) read->addRHS(parseIdentifier());
 			if (checkAndEatToken(Tokens::rparen)) {
 				if (checkAndEatToken(Tokens::semicolon)) {
-					Logger::parserCreate("ReadStatement", previousToken().value);
+					return read;
 				}
-				else reportError("Expected ; in read");
+				reportError("Expected ; in read");
 			}
 			else reportError("Expected ) in read");
 		}
@@ -231,217 +337,200 @@ void Parser::parseReadStatement() {
 	else reportError("Expected read");
 
 	Logger::parserExit("ReadStatement");
+	return nullptr;
 }
 
-void Parser::parseWhileStatement() {
-	Logger::parserEnter("WhileStatement");
-	if (checkAndEatToken(Tokens::_while)) {
+std::unique_ptr<NodeWriteStatement> Parser::parseWriteStatement() {
+	if (hasError) return nullptr;
+
+	Logger::parserEnter("WriteStatement");
+	if (checkAndEatToken(Tokens::_write)) {
 		if (checkAndEatToken(Tokens::lparen)) {
-			parseExpression();
+			auto param = parseActualParameters();
 			if (checkAndEatToken(Tokens::rparen)) {
-				parseStatement();
-				Logger::parserCreate("WhileStatement", previousToken().value);
+				if (checkAndEatToken(Tokens::semicolon)) return std::make_unique<NodeWriteStatement>(std::move(param));
+				reportError("Expected ; in write");
 			}
-			else reportError("Expected ) in while");
+			else reportError("Expected )");
 		}
-		else reportError("Expected ( in while");
+		else reportError("Expected (");
 	}
-	else reportError("Expected while");
+	else reportError("Expected write");
 
-	Logger::parserExit("WhileStatement");
+	Logger::parserExit("WriteStatement");
+	return nullptr;
 }
 
-void Parser::parseReturnStatement() {
-	Logger::parserEnter("ReturnStatement");
-	if (peekSafe().type != Tokens::_return) reportError("Expected return keyword");
-	checkAndEatToken(Tokens::_return);
+std::unique_ptr<NodeNewLineStatement> Parser::parseNewLineStatement() {
+	if (hasError) return nullptr;
 
-	if (peekSafe().type != Tokens::semicolon) {
+	Logger::parserEnter("NewLineStatement");
+	if (peekSafe().type != Tokens::_newline) reportError("Expected newline keyword");
+	eatCurrentToken(Tokens::_newline);
+
+	if (peekSafe().type != Tokens::semicolon) reportError("Expected ; after newline");
+	eatCurrentToken(Tokens::semicolon);
+
+	return std::make_unique<NodeNewLineStatement>();
+	Logger::parserExit("NewLineStatement");
+}
+
+std::unique_ptr<NodeExpression> Parser::parseExpression() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("Expression");
+	auto op = parseRelopExpression();
+	auto expr = std::make_unique<NodeExpression>(std::move(op));
+
+	while(peekSafe().type == Tokens::assignop) {
 		token t = peekSafe();
-		parseExpression();
-		if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate("ReturnStatement", t.value);
-		else reportError("Expected ; in return");
+		eatCurrentToken(Tokens::assignop);
+		auto nOp = parseRelopExpression();
+		expr->addRHS(t,std::move(nOp));
 	}
-	else Logger::parserCreate("ReturnStatement", " ");
-	Logger::parserExit("ReturnStatement");
+	Logger::parserExit("Expression");
+	return expr;
 }
 
-void Parser::parseNullStatement() {
-	Logger::parserEnter("NullStatement");
-	if (checkAndEatToken(Tokens::semicolon)) {
-		Logger::parserCreate("NullStatement", previousToken().value);
-	}
-	else reportError("Expected ; in nullstatement");
+std::unique_ptr<NodeRelopExpression> Parser::parseRelopExpression() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("RelopExpression");\
 
-	Logger::parserExit("NullStatement");
+	std::cout << "relop index:  " << _index << "\n";
+	auto op = parseSimpleExpression();
+	auto expr = std::make_unique<NodeRelopExpression>(std::move(op));
+
+	while (peekSafe().type == Tokens::relop) {
+		token t = peekSafe();
+		eatCurrentToken(Tokens::relop);
+		auto nOp = parseSimpleExpression();
+		expr->addRHS(t, std::move(nOp));
+	}
+	Logger::parserExit("RelopExpression");
+	return expr;
 }
 
-void Parser::parseIfStatement() {
-	Logger::parserEnter("IfStatement");
-	if (checkAndEatToken(Tokens::_if)) {
-		if (checkAndEatToken(Tokens::lparen)) {
-			parseExpression();
-			if (checkAndEatToken(Tokens::rparen)) {
-				parseStatement();
-				if (peekSafe().type == Tokens::_else) checkAndEatToken(Tokens::_else);
-				Logger::parserCreate("IfStatement", previousToken().value);
-			}
-			else reportError("Expected ) in if");
+std::unique_ptr<NodeSimpleExpression> Parser::parseSimpleExpression() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("SimpleExpression");
+	std::cout << "simple index:  " << _index << "\n";
+
+	auto op = parseTerm();
+	auto expr = std::make_unique<NodeSimpleExpression>(std::move(op));
+	while (peekSafe().type == Tokens::addop) {
+		token t = peekSafe();
+		eatCurrentToken(Tokens::addop);
+		auto nOp = parseTerm();
+		expr->addRHS(t, std::move(nOp));
+	}
+	Logger::parserExit("SimpleExpression");
+	return expr;
+}
+
+std::unique_ptr<NodeTerm> Parser::parseTerm() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("Term");
+
+	auto op = parsePrimary();
+	auto expr = std::make_unique<NodeTerm>(std::move(op));
+	while (peekSafe().type == Tokens::mulop) {
+		token t = peekSafe();
+		eatCurrentToken(Tokens::mulop);
+		auto nOp = parsePrimary();
+		expr->addRHS(t, std::move(nOp));
+	}
+	Logger::parserExit("Term");
+	return expr;
+}
+
+std::unique_ptr<NodePrimary> Parser::parsePrimary() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("Primary");
+
+	if (peekSafe().type == Tokens::ID) {
+		token id = parseIdentifier();
+		if (peekSafe().type == Tokens::lparen) {
+			auto func = parseFunctionCall();
+			return std::make_unique<NodePrimary>(id, std::move(func));
 		}
-		else reportError("Expected ( in if");
+		return std::make_unique<NodePrimary>(id);
 	}
-	else reportError("Expected if");
-}
+	//number
+	token t = peekSafe();
+	if (checkAndEatToken(Tokens::number)) return std::make_unique<NodePrimary>(t);
 
-void Parser::parseBreakStatement() {
-	Logger::parserEnter("BreakStatement");
-	if (checkAndEatToken(Tokens::_break)) {
-		if (checkAndEatToken(Tokens::semicolon)) {
-			Logger::parserCreate("BreakStatement", previousToken().value);
-		}
-		else reportError("Expected ; in break");
-	}
-	else reportError("Expected break");
+	//charliteral
+	if (checkAndEatToken(Tokens::charliteral)) return std::make_unique<NodePrimary>(t);
 
-	Logger::parserExit("BreakStatement");
-}
+	//string
+	if (checkAndEatToken(Tokens::string)) return std::make_unique<NodePrimary>(t);
 
-void Parser::parseExpressionStatement() {
-	Logger::parserEnter("ExpressionStatement");
-	parseExpression();
-	if (checkAndEatToken(Tokens::semicolon)) {
-		Logger::parserCreate("ExpressionStatement", previousToken().value);
-	}
-	else reportError("Expected ; in expression");
-
-	Logger::parserExit("ExpressionStatement");
-}
-
-void Parser::parseCompoundStatement() {
-	Logger::parserEnter("CompoundStatement");
-	if (checkAndEatToken(Tokens::lcurly)) {
-		while (isTypeLit(peekSafe())) {
-			parseType();
-			token t1 = previousToken();
-			parseIdentifier();
-			token t2 = previousToken();
-
-			if (checkAndEatToken(Tokens::semicolon)) Logger::parserCreate(
-				"CompoundStatement", t1.value + " " + t2.value);
-			else reportError("Expected ; in compound");
-		}
-		while (!checkAndEatToken(Tokens::rcurly)) {
-			if (peekSafe().type == Tokens::ERROR) return;
-			if (!hasError) parseStatement();
-		}
-	}
-	else reportError("Expected { in compound");
-	Logger::parserExit("CompoundStatement");
-}
-
-void Parser::parseStatement() {
-	Logger::parserEnter("Statement");
-	token nextT = peekSafe();
-	if (nextT.type == Tokens::_break) parseBreakStatement();
-	else if (nextT.type == Tokens::_if) parseIfStatement();
-	else if (nextT.type == Tokens::semicolon) parseNullStatement();
-	else if (nextT.type == Tokens::_return) parseReturnStatement();
-	else if (nextT.type == Tokens::_while) parseWhileStatement();
-	else if (nextT.type == Tokens::_read) parseReadStatement();
-	else if (nextT.type == Tokens::_newline) parseNewLineStatement();
-	else if (nextT.type == Tokens::_write) parseWriteStatement();
-	else if (nextT.type == Tokens::lcurly) parseCompoundStatement();
-	else if (isStartingExpression(nextT)) parseExpressionStatement();
-	else if (nextT.type == Tokens::ERROR || hasError) return;
-	else reportError("Statement unrecongnized");
-	Logger::parserCreate("Statement");
-	Logger::parserExit("Statement");
-}
-
-void Parser::parseToyCProgram() {
-	if (!parsingStarted) {
-		Logger::parserEnter("ToyCProgram");
-		Logger::parserCreate("Program", "ToyCProgram");
-		parsingStarted = true;
-	}
-	if (peekSafe().type != Tokens::eof && !hasError) parseDefinition();
-	if (peekSafe().type == Tokens::eof) {
-		Logger::parserExit("ToyCProgram");
-		_tokenBuffer.clear();
-		_index = 0;
-	}
-}
-
-void Parser::parseDefinition() {
-	if (hasError) return;
-	Logger::parserEnter("Definition");
-	if (isTypeLit(peekSafe())) {
-		parseType();
-		token t1 = previousToken();
-		if (peekSafe().type == Tokens::ID) {
-			parseIdentifier();
-			token t2 = previousToken();
-			if (peekSafe().type == Tokens::lparen) parseFunctionDefinition();
-			else if (peekSafe().type != Tokens::semicolon) reportError("Expected a ; in definition");
-			else {
-				checkAndEatToken(Tokens::semicolon);
-				Logger::parserCreate("Definition", t1.value + " " + t2.value);
-			}
-		}
-		else reportError("Expected identifier after type");
-	}
-	Logger::parserExit("Definition");
-}
-
-void Parser::parseFunctionDefinition() {
-	Logger::parserEnter("FunctionDefinition");
-	parseFunctionHeader();
-	parseFunctionBody();
-	Logger::parserCreate("FunctionDefinition", " ");
-	Logger::parserExit("FunctionDefinition");
-}
-
-void Parser::parseFunctionHeader() {
-	Logger::parserEnter("FunctionHeader");
-	token t = previousToken();
+	//expression
 	if (checkAndEatToken(Tokens::lparen)) {
-		if (peekSafe().type != Tokens::rparen) {
-			checkAndEatToken(Tokens::rparen);
-			parseFormalParamList();
-			if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionHeader", t.value);
-			else reportError("Expected ) in function header");
-		}
-		if (checkAndEatToken(Tokens::rparen)) Logger::parserCreate("FunctionHeader", t.value);
+		auto expr = parseExpression();
+		if (checkAndEatToken(Tokens::rparen)) return std::make_unique<NodePrimary>(std::move(expr));
+		reportError("Expected ) in primary");
 	}
-	else reportError("Expected ( in function header");
 
-	Logger::parserExit("FunctionHeader");
+	//primary (-)
+	if (t.type == Tokens::addop && t.value == "-") {
+		eatCurrentToken(Tokens::addop);
+		auto p = parsePrimary();
+		return std::make_unique<NodePrimary>(std::move(t), std::move(p));
+	}
+
+	//primary (not)
+	if (checkAndEatToken(Tokens::_not)) {
+		auto p = parsePrimary();
+		return std::make_unique<NodePrimary>(std::move(t), std::move(p));
+	}
+
+	reportError("Unexpected primary");
+	Logger::parserExit("Primary");
+	return nullptr;
 }
 
-void Parser::parseFunctionBody() {
-	Logger::parserEnter("FunctionBody");
-	parseCompoundStatement();
-	Logger::parserCreate("FunctionBody");
-	Logger::parserExit("FunctionBody");
+std::unique_ptr<NodeFunctionCall> Parser::parseFunctionCall() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("FunctionCall");
+
+	if (peekSafe().type != Tokens::lparen) reportError("Expected ( in functioncall");
+	checkAndEatToken(Tokens::lparen);
+
+	if (peekSafe().type != Tokens::rparen) {
+		auto param = parseActualParameters();
+		if (checkAndEatToken(Tokens::rparen)) return std::make_unique<NodeFunctionCall>(std::move(param));
+		reportError("Expected ) in functioncall");
+	}
+	else return std::make_unique<NodeFunctionCall>();
+	Logger::parserExit("FunctionCall");
+	return nullptr;
 }
 
-void Parser::parseFormalParamList() {
-	Logger::parserEnter("FormalParamList");
-	if (isTypeLit(peekSafe())) {
-		parseType();
-		if (peekSafe().type == Tokens::ID) parseIdentifier();
-		else reportError("Expected identifier in formalparamlist");
+std::unique_ptr<NodeActualParameters> Parser::parseActualParameters() {
+	if (hasError) return nullptr;
+	Logger::parserEnter("ActualParameters");
+	auto op = parseExpression();
+	auto expr = std::make_unique<NodeActualParameters>(std::move(op));
 
-		while (peekSafe().type == Tokens::comma) {
-			if (isTypeLit(peekSafe())) {
-				parseType();
-				if (peekSafe().type == Tokens::ID) parseIdentifier();
-				else reportError("Expected identifier after type in formalparamlist");
-			}
-		}
+	while (checkAndEatToken(Tokens::comma)) {
+		auto nOp = parseExpression();
+		expr->addRHS(std::move(nOp));
 	}
-	Logger::parserCreate("FormalParamList");
-	Logger::parserExit("FormalParamList");
+	Logger::parserExit("ActualParameters");
+	return expr;
+}
+
+token Parser::parseIdentifier() {
+	Logger::parserEnter("Identifier");
+	token t = peekSafe();
+	if (t.type == Tokens::ID) {
+		eatCurrentToken(Tokens::ID);
+		Logger::parserExit("Identifier");
+		return t;
+	}
+	reportError("Expected Identifier inside identifier");
+	return returnBadToken();
+
 }
 
 bool Parser::isTypeLit(const token& t) {
@@ -467,8 +556,7 @@ std::optional<token> Parser::peek(int offset) const {
 //makes it impossible to unpack a null value
 token Parser::peekSafe(const int offset) const {
 	if (peek(offset).has_value()) return peek(offset).value();
-	//Logger::error("peekSafe Unpacked Null");
-	return token{Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false};
+	return returnBadToken();
 }
 
 //returns the current token and increments the index 
@@ -495,6 +583,10 @@ bool Parser::checkAndEatToken(Tokens type) {
 token Parser::previousToken(int offset) {
 	if (_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at(_index - offset);
 	return _tokenBuffer.at(0);
+}
+
+token Parser::returnBadToken() const {
+	return token{ Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false };
 }
 
 //for debugging, and maybe error messages

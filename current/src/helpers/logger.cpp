@@ -40,9 +40,9 @@ void Logger::parserExit(const std::string& message) {
 }
 
 void Logger::outputToken(const token t) {
-	/*if (logLevel == Level::Parser) {
-	std::cout << "[EATING] " << t.typeString << " " << t.value << "\n";
-	}*/
+	//if (logLevel == Level::Parser) {
+	//std::cout << "[EATING] " << t.typeString << " " << t.value << "\n";
+	//}
 }
 
 void Logger::outputTokens(const std::vector<token> t) {
