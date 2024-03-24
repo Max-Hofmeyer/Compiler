@@ -11,7 +11,9 @@ add_executable(current
 	src/scanner.cpp
 	src/helpers/logger.cpp
 	src/helpers/cliConfig.cpp
-	src/parser/parser.cpp)
+	src/parser/parser.cpp
+	src/parser/ast.cpp
+)
 
 target_include_directories(current PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

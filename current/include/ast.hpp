@@ -6,6 +6,7 @@
 #include <variant>
 #include "tokens.h"
 #include "logger.h"
+#include <optional>
 
 class NodeToyCProgram;
 class NodeDefinition;
@@ -34,46 +35,52 @@ class NodePrimary;
 class NodeFunctionCall;
 class NodeActualParameters;
 
-//todo: statement, breakstatement, null, newline, 
+class PrettyPrint {
+public:
+	static PrettyPrint& Indentation() {
+		static PrettyPrint indent;
+		return indent;
+	}
+
+	std::string spaces() const {
+		return std::string(pos, ' ');
+	}
+
+	void indent() { pos += indentSize; }
+	void outdent() { pos -= indentSize;  }
+
+private:
+	int pos = 0;
+	int indentSize = 2;
+};
 
 class Node {
 public:
 	virtual ~Node() {}
-	//virtual void print(std::ostream& out) const = 0;
+	virtual void print(std::ostream& out) const = 0;
 };
 
 class NodeToyCProgram : public Node {
-	std::vector<std::unique_ptr<NodeDefinition>> definitions;
 public:
+	std::vector<std::unique_ptr<NodeDefinition>> definitions;
 	void addRHS(std::unique_ptr<NodeDefinition> def) {
 		definitions.emplace_back(std::move(def));
 	}
 
-	//void print(std::ostream& out) const override {
-	//	//out << "ToyCProgram(\n";
-	//	//for(const auto& def:definitions) {
-	//	//	def->print(out);
-	//	//}
-	//	//out << ")\n";
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeDefinition : public Node {
+public:
 	std::unique_ptr<NodeDeclaration> lhs;
 	std::optional<std::unique_ptr<NodeFunctionDefinition>> rhs;
-
-public:
 	explicit NodeDefinition(std::unique_ptr<NodeDeclaration> decl)
 		: lhs(std::move(decl)) {}
 
 	NodeDefinition(std::unique_ptr<NodeDeclaration> decl, std::unique_ptr<NodeFunctionDefinition> funcdef)
 	: lhs(std::move(decl)), rhs(std::move(funcdef)) {}
 
-	//void print(std::ostream& out) const override {
-	//	//out << "Definition(" << lhs->print(out);
-	//	//if (rhs.has_value()) rhs->print(out);
-	//	//out << ")\n";
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeFunctionDefinition : public Node {
@@ -84,11 +91,7 @@ public:
 	explicit NodeFunctionDefinition(std::unique_ptr<NodeFunctionHeader> header, std::unique_ptr<NodeFunctionBody> body)
 		: lhs(std::move(header)), rhs(std::move(body)) {}
 
-		//out << "Definition(" << lhs->print(out);
-		//if (rhs.has_value()) rhs->print(out);
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeFunctionHeader : public Node {
@@ -100,9 +103,7 @@ public:
 	explicit NodeFunctionHeader(std::unique_ptr<NodeFormalParamList> paramlist) :
 		lhs(std::move(paramlist)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeFunctionBody : public Node {
@@ -111,9 +112,7 @@ public:
 	explicit NodeFunctionBody(std::unique_ptr<NodeCompoundStatement> stmt)
 		: lhs(std::move(stmt)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeDeclaration : public Node {
@@ -123,9 +122,7 @@ public:
 	explicit NodeDeclaration(token t, token ID)
 	: type(std::move(t)), id(std::move(ID)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeFormalParamList : public Node {
@@ -140,9 +137,7 @@ public:
 		rhs.emplace_back(std::move(n));
 	}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeStatement : public Node {
@@ -161,9 +156,7 @@ class NodeStatement : public Node {
 
 public:
 	explicit NodeStatement(StatementVal val) : val(std::move(val)) {}
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeExpressionStatement : public Node {
@@ -171,17 +164,13 @@ class NodeExpressionStatement : public Node {
 
 public:
 	explicit NodeExpressionStatement(std::unique_ptr<NodeExpression> expr) : exp(std::move(expr)) {}
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeBreakStatement : public Node {
 public:
 	NodeBreakStatement() = default;
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeCompoundStatement : public Node {
@@ -195,9 +184,7 @@ public:
 	void addStatement(std::unique_ptr<NodeStatement> stmt) {
 		rhs.emplace_back(std::move(stmt));
 	}
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeIfStatement : public Node {
@@ -219,17 +206,13 @@ public:
 		mhs(std::move(state)),
 		rhs(std::move(elseState)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeNullStatement : public Node {
 public:
 	NodeNullStatement() = default;
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeReturnStatement : public Node {
@@ -242,9 +225,7 @@ public:
 	explicit NodeReturnStatement(std::unique_ptr<NodeExpression> expr) :
 		lhs(std::move(expr)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeWhileStatement : public Node {
@@ -257,9 +238,7 @@ public:
 								lhs(std::move(expr)),
 								rhs(std::move(state)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 
 };
 
@@ -274,9 +253,7 @@ public:
 		rhs.emplace_back(std::move(id));
 	}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeWriteStatement : public Node {
@@ -285,18 +262,14 @@ class NodeWriteStatement : public Node {
 public:
 	explicit NodeWriteStatement(std::unique_ptr<NodeActualParameters> lhsParm) : lhs(std::move(lhsParm)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeNewLineStatement : public Node {
 public:
 	NodeNewLineStatement() = default;
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeExpression : public Node {
@@ -311,9 +284,7 @@ public:
 	void addRHS(token assignop, std::unique_ptr<NodeRelopExpression> expr) {
 		rhs.emplace_back(std::move(assignop), std::move(expr));
 	}
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeRelopExpression : public Node {
@@ -327,9 +298,7 @@ public:
 	void addRHS(token relop, std::unique_ptr<NodeSimpleExpression> expr) {
 		rhs.emplace_back(std::move(relop), std::move(expr));
 	}
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeSimpleExpression : public Node {
@@ -344,9 +313,7 @@ public:
 		rhs.emplace_back(std::move(addop), std::move(expr));
 	}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeTerm : public Node {
@@ -361,9 +328,7 @@ public:
 		rhs.emplace_back(std::move(addop), std::move(expr));
 	}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 //check this first if shit breaks
@@ -386,9 +351,7 @@ public:
 	NodePrimary(std::unique_ptr<NodeExpression> expr) : val(std::move(expr)) {}
 	NodePrimary(token t, std::unique_ptr<NodePrimary> p) : val(std::make_pair(std::move(t), std::move(p))) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeFunctionCall : public Node {
@@ -399,9 +362,7 @@ public:
 	explicit NodeFunctionCall(std::unique_ptr<NodeActualParameters> expr) :
 		lhs(std::move(expr)) {}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
 
 class NodeActualParameters : public Node {
@@ -416,7 +377,5 @@ public:
 		rhs.emplace_back( std::move(expr));
 	}
 
-	//void print(std::ostream& out) const override {
-
-	//}
+	void print(std::ostream& out) const override;
 };
