@@ -42,7 +42,7 @@ void Parser::parseLine() {
 	//Logger::outputTokens(_tokenBuffer);
 	auto program = std::make_unique<NodeToyCProgram>();
 
-	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty()) {
+	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
 		auto prog = parseToyCProgram();
 		prog->print(std::cout);
 	}
@@ -158,17 +158,17 @@ std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
 		if (peekSafe().type == Tokens::ID) {
 			token id = parseIdentifier();
 			auto declaration = std::make_unique<NodeDeclaration>(type, id);
-			formal = std::make_unique<NodeFormalParamList>(std::move(declaration));
+			if (declaration) formal = std::make_unique<NodeFormalParamList>(std::move(declaration));
 		}
 		else reportError("Expected identifier in formalparamlist");
 
-		while (peekSafe().type == Tokens::comma) {
+		while (checkAndEatToken(Tokens::comma) && !hasError) {
 			if (isTypeLit(peekSafe())) {
 				token nType = parseType();
 				if (peekSafe().type == Tokens::ID) {
 					token nId = parseIdentifier();
 					auto nDeclaration = std::make_unique<NodeDeclaration>(nType, nId);
-					formal->addRHS(std::move(nDeclaration));
+					if (nDeclaration) formal->addRHS(std::move(nDeclaration));
 				}
 				else reportError("Expected identifier after type in formalparamlist");
 			}
@@ -231,7 +231,7 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 
 	Logger::parserEnter("CompoundStatement");
 	if (checkAndEatToken(Tokens::lcurly)) {
-		while (isTypeLit(peekSafe())) {
+		while (isTypeLit(peekSafe()) && !hasError) {
 			token type = parseType();
 			token id = parseIdentifier();
 			auto d = std::make_unique<NodeDeclaration>(type, id);
@@ -240,7 +240,7 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 			}
 			else reportError("Expected ; in compound");
 		}
-		while (!checkAndEatToken(Tokens::rcurly)) {
+		while (!checkAndEatToken(Tokens::lcurly) && !hasError) {
 			auto s = parseStatement();
 			if (s) compound->addStatement(std::move(s));
 		}
@@ -338,7 +338,7 @@ std::unique_ptr<NodeReadStatement> Parser::parseReadStatement() {
 		if (checkAndEatToken(Tokens::lparen)) {
 			token id = parseIdentifier();
 			auto read = std::make_unique<NodeReadStatement>(std::move(id));
-			while (checkAndEatToken(Tokens::comma)) read->addRHS(parseIdentifier());
+			while (checkAndEatToken(Tokens::comma) && !hasError) read->addRHS(parseIdentifier());
 			if (checkAndEatToken(Tokens::rparen)) {
 				if (checkAndEatToken(Tokens::semicolon)) {
 					Logger::parserExit("ReadStatement");
@@ -397,7 +397,7 @@ std::unique_ptr<NodeExpression> Parser::parseExpression() {
 	auto op = parseRelopExpression();
 	auto expr = std::make_unique<NodeExpression>(std::move(op));
 
-	while (peekSafe().type == Tokens::assignop) {
+	while (peekSafe().type == Tokens::assignop && !hasError) {
 		token t = peekSafe();
 		eatCurrentToken(Tokens::assignop);
 		auto nOp = parseRelopExpression();
@@ -413,7 +413,7 @@ std::unique_ptr<NodeRelopExpression> Parser::parseRelopExpression() {
 	auto op = parseSimpleExpression();
 	auto expr = std::make_unique<NodeRelopExpression>(std::move(op));
 
-	while (peekSafe().type == Tokens::relop) {
+	while (peekSafe().type == Tokens::relop && !hasError) {
 		token t = peekSafe();
 		eatCurrentToken(Tokens::relop);
 		auto nOp = parseSimpleExpression();
@@ -429,7 +429,7 @@ std::unique_ptr<NodeSimpleExpression> Parser::parseSimpleExpression() {
 
 	auto op = parseTerm();
 	auto expr = std::make_unique<NodeSimpleExpression>(std::move(op));
-	while (peekSafe().type == Tokens::addop) {
+	while (peekSafe().type == Tokens::addop && !hasError) {
 		token t = peekSafe();
 		eatCurrentToken(Tokens::addop);
 		auto nOp = parseTerm();
@@ -445,7 +445,7 @@ std::unique_ptr<NodeTerm> Parser::parseTerm() {
 
 	auto op = parsePrimary();
 	auto expr = std::make_unique<NodeTerm>(std::move(op));
-	while (peekSafe().type == Tokens::mulop) {
+	while (peekSafe().type == Tokens::mulop && !hasError) {
 		token t = peekSafe();
 		eatCurrentToken(Tokens::mulop);
 		auto nOp = parsePrimary();
@@ -541,6 +541,7 @@ std::unique_ptr<NodeActualParameters> Parser::parseActualParameters() {
 	auto expr = std::make_unique<NodeActualParameters>(std::move(op));
 
 	while (checkAndEatToken(Tokens::comma)) {
+		if (hasError) break;
 		auto nOp = parseExpression();
 		expr->addRHS(std::move(nOp));
 	}
@@ -549,6 +550,7 @@ std::unique_ptr<NodeActualParameters> Parser::parseActualParameters() {
 }
 
 token Parser::parseIdentifier() {
+	if (hasError) return returnBadToken();
 	Logger::parserEnter("Identifier");
 	token t = peekSafe();
 	if (t.type == Tokens::ID) {
@@ -588,9 +590,7 @@ token Parser::peekSafe(const int offset) const {
 
 //returns the current token and increments the index 
 token Parser::eat() {
-	token t = _tokenBuffer.at(_index++);
-	Logger::outputToken(t);
-	return t;
+	return _tokenBuffer.at(_index++);
 }
 
 //returns null if the current token in the buffer doesnt match 

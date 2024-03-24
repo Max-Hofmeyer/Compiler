@@ -1,0 +1,50 @@
+int factorial(int n) {
+    if (n <= 1)
+        return 1;
+    else
+        return n * factorial(n - 1);
+}
+
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = t;
+        t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+int main() {
+    int num1;
+    int num2;
+    read(num1);
+    read(num2);
+    write("Factorial of ");
+    write(num1);
+    write(" is ");
+    write(factorial(num1));
+    newline;
+    write("GCD of ");
+    write(num1);
+    write(" and ");
+    write(num2);
+    write(" is ");
+    write(gcd(num1, num2));
+    newline;
+
+    if (num1 > num2) {
+        write(num1);
+        write(" is greater than ");
+        write(num2);
+    } else if (num1 < num2) {
+        write(num2);
+        write(" is greater than ");
+        write(num1);
+    } else {
+        write("Both numbers are equal.");
+    }
+    newline;
+
+    return;
+}

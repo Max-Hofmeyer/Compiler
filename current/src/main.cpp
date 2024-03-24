@@ -24,9 +24,11 @@ int main(int argc, char** argv) {
 		Scanner scanner(std::move(CliConfig::fileContents));
 		Parser parser;
 		scanner.Add(&parser);
-
-		if(!parser.hasError) scanner.scan();
+		if (!scanner.hasError || !parser.hasError) {
+			scanner.scan();
+			return EXIT_SUCCESS;
+		}
+		return EXIT_FAILURE;
 	}
-	else return EXIT_FAILURE;
-	return EXIT_SUCCESS;
+	return EXIT_FAILURE;
 }
