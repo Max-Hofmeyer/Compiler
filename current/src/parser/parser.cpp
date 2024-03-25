@@ -7,7 +7,7 @@ void Parser::Update(const token& t) {
 	if (!hasError) {
 		//if (currentLine == 0) currentLine = t.lineLoc;
 
-		////current token is on the next line, so start parsing
+		//////current token is on the next line, so start parsing
 		//if (t.lineLoc != currentLine || t.type == Tokens::eof) {
 		//	if (!_tokenBuffer.empty()) {
 		//		parseLine();
@@ -20,13 +20,7 @@ void Parser::Update(const token& t) {
 		//		_tokenBuffer.emplace_back(t);
 		//		currentLine = t.lineLoc;
 		//	}
-		//	//edge case of an empty program
-		//	else {
-		//		_tokenBuffer.emplace_back(t);
-		//		parseLine();
-		//	}
 		//}
-		//else _tokenBuffer.emplace_back(t);
 		_tokenBuffer.emplace_back(t);
 		if (t.type == Tokens::eof) {
 			parseLine();
@@ -44,9 +38,10 @@ void Parser::parseLine() {
 
 	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
 		auto prog = parseToyCProgram();
-		prog->print(std::cout);
+		if (!hasError) prog->print(std::cout);
 	}
 }
+
 
 std::unique_ptr<NodeToyCProgram> Parser::parseToyCProgram() {
 	if (!parsingStarted) {
@@ -240,7 +235,7 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 			}
 			else reportError("Expected ; in compound");
 		}
-		while (!checkAndEatToken(Tokens::lcurly) && !hasError) {
+		while (!checkAndEatToken(Tokens::rcurly) && !hasError) {
 			auto s = parseStatement();
 			if (s) compound->addStatement(std::move(s));
 		}
@@ -623,6 +618,20 @@ void Parser::outputTokenLine() const {
 
 void Parser::reportError(const std::string& message) {
 	hasError = true;
-	//Logger::outputTokens(_tokenBuffer);
+	//0. Create a new buffer of tokens to store the current line
+	//1. loop through _tokenbuffer, checking which tokens are on the same line as
+	// t.lineLoc
+
+	//2. Use Logger::outputTokens to output the tokens as a string
+
+	//3. Figure out how to space the message
+
+	//4. Done
+
+	//for all tokens in _tokenbuffer, get the tokens that have the same line as t
+	//for (const auto& x : _tokenBuffer) {
+	//	if (t.lineLoc == x.lineLoc) _errorBuffer.emplace_back(x);
+	//}
+
 	Logger::error(message);
 }

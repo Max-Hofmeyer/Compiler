@@ -20,13 +20,13 @@ void NodeToyCProgram::print(std::ostream& out) const {
 
 void NodeDefinition::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
+    lhs->print(out);
     if (rhs.has_value()) rhs.value()->print(out);
-    else lhs->print(out);
 }
 
 void NodeFunctionDefinition::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "functionDefinition(\n";
+    out <<" "<< "FunctionDefinition( \n";
     p.indent();
     lhs->print(out);
     out << ",\n";
@@ -37,7 +37,7 @@ void NodeFunctionDefinition::print(std::ostream& out) const {
 
 void NodeFunctionHeader::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "functionHeader(";
+    out << p.spaces() << "FunctionHeader(";
     if (lhs.has_value() && lhs != nullptr) lhs.value()->print(out);
     out << ")";
 }
@@ -58,7 +58,7 @@ void NodeDeclaration::print(std::ostream& out) const {
 
 void NodeFormalParamList::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "formalParamList(";
+    //out << p.spaces() << "formalParamList(";
     lhs->print(out);
     for (const auto& param : rhs) {
         out << ", ";
@@ -84,19 +84,19 @@ void NodeStatement::print(std::ostream& out) const {
 
 void NodeExpressionStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "expressionStatement(";
+    out << p.spaces() << "ExpressionStatement(";
     exp->print(out);
     out << ")";
 }
 
 void NodeBreakStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "breakStatement()";
+    out << p.spaces() << "BreakStatement()";
 }
 
 void NodeCompoundStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "compoundStatement([\n";
+    out << p.spaces() << "CompoundStatement\n" << p.spaces() << "[\n";
     p.indent();
     for (const auto& declaration : lhs) {
         declaration->print(out);
@@ -109,12 +109,12 @@ void NodeCompoundStatement::print(std::ostream& out) const {
         }
     }
     p.outdent();
-    out << p.spaces() << "])";
+    out << "\n" << p.spaces() << "]";
 }
 
 void NodeIfStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "ifStatement(";
+    out << p.spaces() << "IfStatement( ";
     lhs->print(out);
     out << ",\n";
     p.indent();
@@ -129,12 +129,12 @@ void NodeIfStatement::print(std::ostream& out) const {
 
 void NodeNullStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "nullStatement()";
+    out << p.spaces() << "NullStatement()";
 }
 
 void NodeReturnStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "returnStatement(";
+    out << p.spaces() << "ReturnStatement(";
     if (lhs) {
         lhs.value()->print(out);
     }
@@ -143,9 +143,9 @@ void NodeReturnStatement::print(std::ostream& out) const {
 
 void NodeWhileStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "whileStatement(";
+    out << p.spaces() << "WhileStatement( ";
     lhs->print(out);
-    out << ", ";
+    out << ", \n";
     rhs->print(out);
     out << ")";
 }
@@ -235,7 +235,6 @@ void NodeFunctionCall::print(std::ostream& out) const {
 
 void NodeActualParameters::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << "actualParameters(";
     lhs->print(out);
     for (const auto& expr : rhs) {
         out << ", ";

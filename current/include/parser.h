@@ -44,6 +44,7 @@ private:
 
 	/* Class variables */
 	std::vector<token> _tokenBuffer;
+	std::vector<token> _errorBuffer;
 	size_t _index = 0;
 	int currentLine = 0;
 	bool parsingStarted = false;
