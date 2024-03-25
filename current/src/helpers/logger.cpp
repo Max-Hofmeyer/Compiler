@@ -28,10 +28,6 @@ void Logger::parserEnter(const std::string& message) {
 	}
 }
 
-void Logger::parserCreate(const std::string& name, const std::string& data) {
-	std::cout << getIndent() << "[NODE] " << name <<" " << data << "\n";
-}
-
 void Logger::parserExit(const std::string& message) {
 	outdent();
 	if (logLevel == Level::Parser || logLevel == Level::Verbose){
@@ -46,14 +42,8 @@ void Logger::outputToken(const token t) {
 }
 
 void Logger::outputTokens(const std::vector<token> t) {
+	for (const auto& x : t) std::cout << x.value << " ";
 	std::cout << "\n";
-	std::cout << "\t" << t.front().lineLoc << ":\t";
-
-	for (size_t i = 0; i < t.size(); ++i) std::cout << i << "\t";
-	std::cout << "\n\t\t";
-
-	for (const auto& x : t) std::cout << x.value << "\t";
-	std::cout << "\n\n";
 }
 
 void Logger::debug(const std::string& message) {

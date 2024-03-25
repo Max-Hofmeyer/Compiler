@@ -1,47 +1,15 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/27/2024
 #include "parser.h"
 
-//subscribed to the scanner. Logic inside buffers the token line by line.
-void Parser::Update(const token& t) {
-	//since we need to start parsing after a complete line
-	if (!hasError) {
-		//if (currentLine == 0) currentLine = t.lineLoc;
-
-		//////current token is on the next line, so start parsing
-		//if (t.lineLoc != currentLine || t.type == Tokens::eof) {
-		//	if (!_tokenBuffer.empty()) {
-		//		parseLine();
-		//		if (_tokenBuffer.size() != _index) Logger::warning("Token buffer is being cleared before line can be fully parsed");
-		//		_tokenBuffer.clear();
-		//		_index = 0;
-		//	}
-		//	//makes sure the current token is added 
-		//	if (t.type != Tokens::eof) {
-		//		_tokenBuffer.emplace_back(t);
-		//		currentLine = t.lineLoc;
-		//	}
-		//}
-		_tokenBuffer.emplace_back(t);
-		if (t.type == Tokens::eof) {
-			parseLine();
-		}
-		//while(!_tokenBuffer.empty()) {
-		//	const token& nextT = _tokenBuffer.front();
-
-		//}
-	}
-}
-
-void Parser::parseLine() {
-	//Logger::outputTokens(_tokenBuffer);
+void Parser::begin() {
+	_scanner.hasError = false;
+	_tokenBuffer.emplace_back(_scanner.getNextToken());
 	auto program = std::make_unique<NodeToyCProgram>();
-
 	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
 		auto prog = parseToyCProgram();
 		if (!hasError) prog->print(std::cout);
 	}
 }
-
 
 std::unique_ptr<NodeToyCProgram> Parser::parseToyCProgram() {
 	if (!parsingStarted) {
@@ -585,6 +553,7 @@ token Parser::peekSafe(const int offset) const {
 
 //returns the current token and increments the index 
 token Parser::eat() {
+	_tokenBuffer.emplace_back(_scanner.getNextToken());
 	return _tokenBuffer.at(_index++);
 }
 
@@ -616,22 +585,29 @@ void Parser::outputTokenLine() const {
 	//Logger::outputTokens(_tokenBuffer);
 }
 
+//useful to match the error token in the buffer, otherwise useless
+bool Parser::areTokensEqual(token t1, token t2) {
+	if (t1.type == t2.type && t1.value == t2.value && t1.lineLoc == t2.lineLoc) return true;
+	return false;
+}
+
+//this pretty much works, only thing that needs to be fixed is the fact
+//the parser won't have enough tokens to output the rest of the line
 void Parser::reportError(const std::string& message) {
 	hasError = true;
-	//0. Create a new buffer of tokens to store the current line
-	//1. loop through _tokenbuffer, checking which tokens are on the same line as
-	// t.lineLoc
-
-	//2. Use Logger::outputTokens to output the tokens as a string
-
-	//3. Figure out how to space the message
-
-	//4. Done
-
-	//for all tokens in _tokenbuffer, get the tokens that have the same line as t
-	//for (const auto& x : _tokenBuffer) {
-	//	if (t.lineLoc == x.lineLoc) _errorBuffer.emplace_back(x);
-	//}
+	int position = 0;
+	//get the error token, we don't have to pass anything now
+	token current = _tokenBuffer.at(_index);
+	for (auto x : _tokenBuffer) {
+		if (current.lineLoc == x.lineLoc) {
+			_errorBuffer.emplace_back(x);
+			//keep adding the length of the string until the error token
+			if (!areTokensEqual(current, x)) position += x.value.length();
+		}
+	}
+	Logger::outputTokens(_errorBuffer);
+	for (int i = 0; i < position; ++i) std::cout << " ";
+	std::cout << "^ ";
 
 	Logger::error(message);
 }

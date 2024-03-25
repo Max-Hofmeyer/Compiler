@@ -2,97 +2,86 @@
 
 #include "scanner.h"
 
-void Scanner::scan() {
-	_index = 0;
+token Scanner::getNextToken() {
 	hasError = false;
 	std::string buffer;
-	int line = 1;
 
-	while (peek().has_value() && !hasError) {
+	if (peek().has_value()) {
+		if (peek().value() == '\n') {
+			line++;
+			eat();
+		}
+		while (peek().has_value() && std::isspace(peek().value())) {
+			eat();
+		}
+	}
+	if (peek().has_value()) {
 		//keywords
 		if (std::isalpha(peek().value())) {
 			buffer.push_back(eat());
 			while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
 
 			if (buffer == "return") {
-				sendToken(Tokens::_return, line, "RETURN", buffer, true);
-				buffer.clear();
+				return createToken(Tokens::_return, line, "RETURN", buffer, true);
 			}
-			else if (buffer == "int") {
-				sendToken(Tokens::_int, line, "INT", buffer, true);
-				buffer.clear();
+			if (buffer == "int") {
+				return createToken(Tokens::_int, line, "INT", buffer, true);
 			}
-			else if (buffer == "char") {
-				sendToken(Tokens::_char, line, "CHAR", buffer, true);
-				buffer.clear();
+			if (buffer == "char") {
+				return createToken(Tokens::_char, line, "CHAR", buffer, true);
 			}
-			else if (buffer == "if") {
-				sendToken(Tokens::_if, line, "IF", buffer, true);
-				buffer.clear();
+			if (buffer == "if") {
+				return createToken(Tokens::_if, line, "IF", buffer, true);
 			}
-			else if (buffer == "else") {
-				sendToken(Tokens::_else, line, "ELSE", buffer, true);
-				buffer.clear();
+			if (buffer == "else") {
+				return createToken(Tokens::_else, line, "ELSE", buffer, true);
 			}
-			else if (buffer == "for") {
-				sendToken(Tokens::_for, line, "FOR", buffer, true);
-				buffer.clear();
+			if (buffer == "for") {
+				return createToken(Tokens::_for, line, "FOR", buffer, true);
 			}
-			else if (buffer == "do") {
-				sendToken(Tokens::_do, line, "DO", buffer, true);
-				buffer.clear();
+			if (buffer == "do") {
+				return createToken(Tokens::_do, line, "DO", buffer, true);
 			}
-			else if (buffer == "while") {
-				sendToken(Tokens::_while, line, "WHILE", buffer, true);
-				buffer.clear();
+			if (buffer == "while") {
+				return createToken(Tokens::_while, line, "WHILE", buffer, true);
 			}
-			else if (buffer == "switch") {
-				sendToken(Tokens::_switch, line, "SWITCH", buffer, true);
-				buffer.clear();
+			if (buffer == "switch") {
+				return createToken(Tokens::_switch, line, "SWITCH", buffer, true);
 			}
-			else if (buffer == "case") {
-				sendToken(Tokens::_case, line, "CASE", buffer, true);
-				buffer.clear();
+			if (buffer == "case") {
+				return createToken(Tokens::_case, line, "CASE", buffer, true);
 			}
-			else if (buffer == "default") {
-				sendToken(Tokens::_default, line, "DEFAULT", buffer, true);
-				buffer.clear();
+			if (buffer == "default") {
+				return createToken(Tokens::_default, line, "DEFAULT", buffer, true);
 			}
-			else if (buffer == "write") {
-				sendToken(Tokens::_write, line, "WRITE", buffer, true);
-				buffer.clear();
+			if (buffer == "write") {
+				return createToken(Tokens::_write, line, "WRITE", buffer, true);
 			}
-			else if (buffer == "read") {
-				sendToken(Tokens::_read, line, "READ", buffer, true);
-				buffer.clear();
+			if (buffer == "read") {
+				return createToken(Tokens::_read, line, "READ", buffer, true);
 			}
-			else if (buffer == "continue") {
-				sendToken(Tokens::_continue, line, "CONTINUE", buffer, true);
-				buffer.clear();
+			if (buffer == "continue") {
+				return createToken(Tokens::_continue, line, "CONTINUE", buffer, true);
 			}
-			else if (buffer == "break") {
-				sendToken(Tokens::_break, line, "BREAK", buffer, true);
-				buffer.clear();
+			if (buffer == "break") {
+				return createToken(Tokens::_break, line, "BREAK", buffer, true);
 			}
-			else if (buffer == "newline") {
-				sendToken(Tokens::_newline, line, "NEWLINE", buffer, true);
-				buffer.clear();
+			if (buffer == "newline") {
+				return createToken(Tokens::_newline, line, "NEWLINE", buffer, true);
 			}
-			else {
-				sendToken(Tokens::ID, line, "ID", buffer, true);
-				buffer.clear();
-			}
+
+			return createToken(Tokens::ID, line, "ID", buffer, true);
 		}
+		std::cout << buffer;
 		//numbers
-		else if (std::isdigit(peek().value())) {
+		while (std::isdigit(peek().value())) {
 			buffer.push_back(eat());
 			while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			//fraction
 			if (peek().has_value() && peek().value() == '.') {
 				buffer.push_back(eat());
 				if (!std::isdigit(peek().value())) {
-					Logger::error("No value after decimal at line: " + std::to_string(line));
-					hasError = true;
+					return reportError("No value after decimal at line: " + std::to_string(line));
 				}
 				while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
@@ -101,16 +90,15 @@ void Scanner::scan() {
 				buffer.push_back(eat());
 				if (peek().value() == '+' || peek().value() == '-') buffer.push_back(eat());
 				if (!std::isdigit(peek().value())) {
-					Logger::error("No value after exponent at line: " + std::to_string(line));
-					hasError = true;
+					return reportError("No value after exponent at line: " + std::to_string(line));
 				}
 				while (peek().has_value() && std::isdigit(peek().value())) { buffer.push_back(eat()); }
 			}
-			sendToken(Tokens::number, line, "NUMBER", buffer, false);
-			buffer.clear();
+
+			return createToken(Tokens::number, line, "NUMBER", buffer, false);
 		}
 		//inline comments
-		else if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '/') {
+		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '/') {
 			eat();
 			eat();
 			while (peek().has_value() && peek().value() != '\n') {
@@ -118,14 +106,14 @@ void Scanner::scan() {
 			}
 		}
 		//block comments
-		else if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
+		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
 			eat();
 			eat();
 			//the simple way to handle block comments
 			int nestedCommentCount = 1;
 			while (nestedCommentCount > 0) {
 				//if comment doesn't end before eof is reached
-				if (!peek().has_value()) break;
+				if (!peek().has_value()) return createToken(Tokens::eof, line, "EOF", "EOF", false);;
 				if (peek().value() == '\n') line++;
 				if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
 					eat();
@@ -141,197 +129,176 @@ void Scanner::scan() {
 			}
 		}
 		//newline
-		else if (peek().value() == '\n') {
+		if (peek().value() == '\n') {
 			line++;
 			eat();
 		}
+
 		//strings
-		else if (peek().value() == '\"') {
+		if (peek().value() == '\"') {
 			buffer.push_back(eat());
 			while (peek().value() != '\"' && peek().value() != '\n') { buffer.push_back(eat()); }
 			if (peek().value() == '\"') {
 				buffer.push_back(eat());
-				sendToken(Tokens::string, line, "STRING", buffer, false);
+				return createToken(Tokens::string, line, "STRING", buffer, false);
 			}
-			else {
-				Logger::error("Illegal string at line: " + std::to_string(line));
-				hasError = true;
-			}
-			buffer.clear();
+
+			return reportError("Illegal string at line: " + std::to_string(line));
 		}
 		//characters
-		else if (peek().value() == '\'') {
+		if (peek().value() == '\'') {
 			buffer.push_back(eat());
 			//empty
 			if (peek().value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
-				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
+				return createToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
 			}
 			//value
-			else if (peek(1).has_value() && peek(1).value() == '\'' && peek().value() != '\n') {
+			if (peek(1).has_value() && peek(1).value() == '\'' && peek().value() != '\n') {
 				buffer.push_back(eat());
 				buffer.push_back(eat());
-				sendToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
+				return createToken(Tokens::charliteral, line, "CHARLITERAL", buffer, false);
 			}
-			else {
-				Logger::error("Illegal char at line: " + std::to_string(line));
-				hasError = true;
-			}
-			buffer.clear();
+			Logger::error("Illegal char at line: " + std::to_string(line));
+			hasError = true;
 		}
-		//tokens
-		else {
-			//LPAREN (()
-			if (peek().value() == '(') {
-				sendToken(Tokens::lparen, line, "LPAREN", "(", false);
-				eat();
-			}
-			//RPAREN ())
-			else if (peek().value() == ')') {
-				sendToken(Tokens::rparen, line, "RPAREN", ")", false);
-				eat();
-			}
-			//LCURLY ({)
-			else if (peek().value() == '{') {
-				sendToken(Tokens::lcurly, line, "LCURLY", "{", false);
-				eat();
-			}
-			//RCURLY (})
-			else if (peek().value() == '}') {
-				sendToken(Tokens::rcurly, line, "RCURLY", "}", false);
-				eat();
-			}
-			//LBRACKET([)
-			else if (peek().value() == '[') {
-				sendToken(Tokens::lbracket, line, "LBRACKET", "[", false);
-				eat();
-			}
-			//RBRACKET (])
-			else if (peek().value() == ']') {
-				sendToken(Tokens::rbracket, line, "RBRACKET", "]", false);
-				eat();
-			}
-			//COMMA (,)
-			else if (peek().value() == ',') {
-				sendToken(Tokens::comma, line, "COMMA", ",", false);
-				eat();
-			}
-			//SEMICOLON (;)
-			else if (peek().value() == ';') {
-				sendToken(Tokens::semicolon, line, "SEMICOLON", ";", true);
-				eat();
-			}
-			//RELOP(!=) or NOT(!)
-			else if (peek().value() == '!') {
-				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "!=", false);
-					eat();
-					eat();
-				}
-				else {
-					sendToken(Tokens::_not, line, "NOT", "!", false);
-					eat();
-				}
-			}
-			//RELOP (<= or <)
-			else if (peek().value() == '<') {
-				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "<=", false);
-					eat();
-					eat();
-				}
-				else {
-					sendToken(Tokens::relop, line, "RELOP", "<", false);
-					eat();
-				}
-			}
-			//RELOP (>= or >)
-			else if (peek().value() == '>') {
-				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", ">=", false);
-					eat();
-					eat();
-				}
-				else {
-					sendToken(Tokens::relop, line, "RELOP", ">", false);
-					eat();
-				}
-			}
-			//COLON (:)
-			else if (peek().value() == ':') {
-				sendToken(Tokens::colon, line, "COLON", ":", false);
-				eat();
-			}
-			//ADDOP (-)
-			else if (peek().value() == '-') {
-				sendToken(Tokens::addop, line, "ADDOP", "-", false);
-				eat();
-			}
-			//ADDOP (+)
-			else if (peek().value() == '+') {
-				sendToken(Tokens::addop, line, "ADDOP", "+", false);
-				eat();
-			}
-			//ADDOP (||)
-			else if (peek().value() == '|') {
-				if (peek(1).has_value() && peek(1).value() == '|') {
-					sendToken(Tokens::addop, line, "ADDOP", "||", false);
-					eat();
-					eat();
-				}
-			}
-			//MULOP (*)
-			else if (peek().value() == '*') {
-				sendToken(Tokens::mulop, line, "MULOP", "*", false);
-				eat();
-			}
-			//MULOP (%)
-			else if (peek().value() == '%') {
-				sendToken(Tokens::mulop, line, "MULOP", "%", false);
-				eat();
-			}
-			//MULOP (/)
-			else if (peek().value() == '/') {
-				sendToken(Tokens::mulop, line, "MULOP", "/", false);
-				eat();
-			}
-			//MULOP (&&)
-			else if (peek().value() == '&') {
-				if (peek(1).has_value() && peek(1).value() == '&') {
-					sendToken(Tokens::mulop, line, "MULOP", "&&", false);
-					eat();
-					eat();
-				}
-			}
-			//ASSIGNOP (=)
-			else if (peek().value() == '=') {
-				if (peek(1).has_value() && peek(1).value() == '=') {
-					sendToken(Tokens::relop, line, "RELOP", "==", false);
-					eat();
-					eat();
-				}
-				else {
-					sendToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
-					eat();
-				}
-			}
-			//whitespace
-			else if (std::isspace(peek().value())) eat();
-			//anything else must be illegal
-			else {
-				std::string illegalChar = std::string(1, peek().value());
-				Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
-				eat();
-			}
-		}
-	}
-	if (!hasError) sendToken(Tokens::eof, line, "EOF", "EOF", false);
-}
 
-void Scanner::sendToken(const Tokens type, const int lineLoc, const std::string& typeString, const std::string& value, const bool isKeyword) {
-	const token t { type, lineLoc, typeString, value, isKeyword };
-	Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
-	Notify(t);
+		/* Tokens */
+		//LPAREN (()
+		if (peek().value() == '(') {
+			eat();
+			return createToken(Tokens::lparen, line, "LPAREN", "(", false);
+		}
+		//RPAREN ())
+		if (peek().value() == ')') {
+			eat();
+			return createToken(Tokens::rparen, line, "RPAREN", ")", false);
+		}
+		//LCURLY ({)
+		if (peek().value() == '{') {
+			eat();
+			return createToken(Tokens::lcurly, line, "LCURLY", "{", false);
+		}
+		//RCURLY (})
+		if (peek().value() == '}') {
+			eat();
+			return createToken(Tokens::rcurly, line, "RCURLY", "}", false);
+		}
+		//LBRACKET([)
+		if (peek().value() == '[') {
+			eat();
+			return createToken(Tokens::lbracket, line, "LBRACKET", "[", false);
+		}
+		//RBRACKET (])
+		if (peek().value() == ']') {
+			eat();
+			return createToken(Tokens::rbracket, line, "RBRACKET", "]", false);
+		}
+		//COMMA (,)
+		if (peek().value() == ',') {
+			eat();
+			return createToken(Tokens::comma, line, "COMMA", ",", false);
+		}
+		//SEMICOLON (;)
+		if (peek().value() == ';') {
+			eat();
+			return createToken(Tokens::semicolon, line, "SEMICOLON", ";", true);
+		}
+		//RELOP(!=) or NOT(!)
+		if (peek().value() == '!') {
+			if (peek(1).has_value() && peek(1).value() == '=') {
+				eat();
+				eat();
+				return createToken(Tokens::relop, line, "RELOP", "!=", false);
+			}
+			eat();
+			return createToken(Tokens::_not, line, "NOT", "!", false);
+		}
+		//RELOP (<= or <)
+		if (peek().value() == '<') {
+			if (peek(1).has_value() && peek(1).value() == '=') {
+				eat();
+				eat();
+				return createToken(Tokens::relop, line, "RELOP", "<=", false);
+			}
+			eat();
+			return createToken(Tokens::relop, line, "RELOP", "<", false);
+		}
+		//RELOP (>= or >)
+		if (peek().value() == '>') {
+			if (peek(1).has_value() && peek(1).value() == '=') {
+				eat();
+				eat();
+				return createToken(Tokens::relop, line, "RELOP", ">=", false);
+			}
+			eat();
+			return createToken(Tokens::relop, line, "RELOP", ">", false);
+		}
+		//COLON (:)
+		if (peek().value() == ':') {
+			eat();
+			return createToken(Tokens::colon, line, "COLON", ":", false);
+		}
+		//ADDOP (-)
+		if (peek().value() == '-') {
+			eat();
+			return createToken(Tokens::addop, line, "ADDOP", "-", false);
+		}
+		//ADDOP (+)
+		if (peek().value() == '+') {
+			eat();
+			return createToken(Tokens::addop, line, "ADDOP", "+", false);
+		}
+		//ADDOP (||)
+		if (peek().value() == '|') {
+			if (peek(1).has_value() && peek(1).value() == '|') {
+				eat();
+				eat();
+				return createToken(Tokens::addop, line, "ADDOP", "||", false);
+			}
+		}
+		//MULOP (*)
+		if (peek().value() == '*') {
+			eat();
+			return createToken(Tokens::mulop, line, "MULOP", "*", false);
+		}
+		//MULOP (%)
+		if (peek().value() == '%') {
+			eat();
+			return createToken(Tokens::mulop, line, "MULOP", "%", false);
+		}
+		//MULOP (/)
+		if (peek().value() == '/') {
+			eat();
+			return createToken(Tokens::mulop, line, "MULOP", "/", false);
+		}
+		//MULOP (&&)
+		if (peek().value() == '&') {
+			if (peek(1).has_value() && peek(1).value() == '&') {
+				eat();
+				eat();
+				return createToken(Tokens::mulop, line, "MULOP", "&&", false);
+			}
+		}
+		//ASSIGNOP (=)
+		if (peek().value() == '=') {
+			if (peek(1).has_value() && peek(1).value() == '=') {
+				eat();
+				eat();
+				return createToken(Tokens::relop, line, "RELOP", "==", false);
+			}
+			eat();
+			return createToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
+		}
+		//whitespace
+
+
+		//anything else must be illegal
+		auto illegalChar = std::string(1, peek().value());
+		Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
+		eat();
+	}
+	return createToken(Tokens::eof, line, "EOF", "EOF", false);
 }
 
 //looks at a character from the source string, default offset is 0
@@ -339,10 +306,25 @@ void Scanner::sendToken(const Tokens type, const int lineLoc, const std::string&
 //tokens. Will return null if peeking exceeds length of source string
 std::optional<char> Scanner::peek(int offset) const {
 	if (_index + offset >= source_.length()) return {};
-	return source_.at(_index + offset);
+	char temp = source_.at(_index + offset);
+	return temp;
 }
 
 //returns the current character and increments the index
 char Scanner::eat() {
+	if (_index >= source_.length()) return ' ';
 	return source_.at(_index++);
+}
+
+token Scanner::createToken(Tokens tokenType, int line, const std::string& buffer, const std::string& value,
+                           const bool isKeyword) {
+	const token t{tokenType, line, buffer, value, isKeyword};
+	Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
+	return t;
+}
+
+token Scanner::reportError(const std::string& message) {
+	Logger::error(message);
+	hasError = true;
+	return token{Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false};
 }

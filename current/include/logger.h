@@ -23,7 +23,6 @@ public:
     static void outputToken(const token t);
     static void outputTokens(std::vector <token> t);
     static void parserEnter(const std::string& message);
-    static void parserCreate(const std::string& name, const std::string& data = "");
     static void parserExit(const std::string& message);
     static void codeGenerator(const std::string& message);
     static void debug(const std::string& message);

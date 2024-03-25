@@ -3,17 +3,17 @@
 #pragma once
 #include <optional>
 #include "logger.h"
-#include "subscriber.h"
 #include "ast.hpp"
+#include "scanner.h"
 
-class Parser : public SubscriberInterface {
+class Parser{
 public:
-	void Update(const token& t);
+	explicit Parser(Scanner& scanner) : _scanner(scanner){}
+	void begin();
 	bool hasError = false;
 
 private:
-	void parseLine();
-
+	Scanner& _scanner;
 	/* Syntax definitions */
 	std::unique_ptr<NodeToyCProgram> parseToyCProgram();
 	std::unique_ptr<NodeDefinition> parseDefinition();
@@ -61,7 +61,7 @@ private:
 	bool checkAndEatToken(Tokens type);
 	token previousToken(int offset = 1);
 	token returnBadToken() const;
-
+	bool areTokensEqual(token t1, token t2);
 
 	/* Error reporting and debugging */
 	void outputTokenLine() const;

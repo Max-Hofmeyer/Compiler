@@ -1,4 +1,5 @@
 int main(){
+	char hello;
 	int yourmom = 1;
 	return;
 }
