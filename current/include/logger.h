@@ -28,10 +28,8 @@ public:
     static void debug(const std::string& message);
     static void warning(const std::string& message);
     static void error(const std::string& message);
-    static int spaces;
-    inline static void indent() { spaces++; }
-    inline static void outdent() { spaces--; }
-    inline static std::string getIndent() { return std::string(spaces * 2, ' '); }
+    static void parserError(const std::string& message, const int lc, const std::vector<token> t, const int spaces);
+	static bool hasError;
 
 private:
     static Level logLevel;

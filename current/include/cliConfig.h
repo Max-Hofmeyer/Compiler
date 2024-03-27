@@ -14,7 +14,7 @@ public:
     static bool LoadFile();
     static int debugLevel;
     static bool verboseEnabled, dumpAST, hasError;
-    static std::string filePath, fileContents;
+    static std::string filePath, fileContents, fileName;
 private:
     static void OutputHelp();
     static void CheckForFile(const std::string& arg);

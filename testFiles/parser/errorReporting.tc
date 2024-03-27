@@ -1,0 +1,36 @@
+int main() {
+    int x;
+}
+
+/*
+int main() {
+    int y;
+    if (y > 0) {
+        int z;
+        z = y;
+
+int main() 
+    int a;
+    a = 5;
+}
+
+
+int main() {
+    int b;
+    {
+    int a;
+    }
+return 0;
+}
+
+int main(){
+}
+
+int main() {
+    int h;
+    {
+        int i;
+        if (i > 0) {
+    }
+    return 0;
+}

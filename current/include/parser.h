@@ -11,6 +11,7 @@ public:
 	explicit Parser(Scanner& scanner) : _scanner(scanner){}
 	void begin();
 	bool hasError = false;
+	bool dumpAST = false;
 
 private:
 	Scanner& _scanner;
@@ -49,6 +50,7 @@ private:
 	int currentLine = 0;
 	bool parsingStarted = false;
 
+
 	/* Syntax check helpers */
 	bool isTypeLit(const token& t);
 	bool isStartingExpression(const token& t);
@@ -60,10 +62,10 @@ private:
 	std::optional<token> eatCurrentToken(Tokens type);
 	bool checkAndEatToken(Tokens type);
 	token previousToken(int offset = 1);
-	token returnBadToken() const;
-	bool areTokensEqual(token t1, token t2);
+	void addTokenToBuffer();
 
 	/* Error reporting and debugging */
-	void outputTokenLine() const;
+	token returnBadToken() const;
+	bool areTokensEqual(token t1, token t2);
 	void reportError(const std::string& message);
 };

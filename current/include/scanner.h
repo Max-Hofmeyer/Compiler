@@ -5,22 +5,24 @@
 #include <optional>
 #include "tokens.h"
 #include "logger.h"
-#include "subject.h"
 
-class Scanner : public Subject{
+class Scanner {
 public:
     explicit Scanner(std::string source) : source_(std::move(source)) {}
-	void scan();
+    token getNextToken(bool display = true);
     bool hasError;
-    token getNextToken();
 
 private:
     std::string source_;
     int line = 1;
     size_t _index = 0;
 	bool _error = false;
+    bool _display = true;
+    int repeat = 0;
+    void checkWhiteSpace();
+    bool checkComments();
     std::optional<char> peek(int offset = 0) const;
-    token createToken(Tokens tokenType, int line, const std::string& value, const std::string& buffer, const bool isKeyword);
+    token createToken(Tokens tokenType, int line, const std::string& buffer, const std::string& value, bool isKeyword);
     char eat();
     token reportError(const std::string& message);
 };

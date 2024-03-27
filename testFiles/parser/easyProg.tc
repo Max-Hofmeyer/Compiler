@@ -1,5 +1,14 @@
+int main() {
+    int hello;
+}
+
 int main(){
-	char hello;
-	int yourmom = 1;
+	while (b != 0) {
+        int t;
+        int b;
+        t = b;
+        b = a % b;
+        a = t;
+    }
 	return;
 }

@@ -174,9 +174,9 @@ public:
 };
 
 class NodeCompoundStatement : public Node {
+public:
 	std::vector<std::unique_ptr<NodeDeclaration>> lhs;
 	std::vector<std::unique_ptr<NodeStatement>> rhs;
-public:
 	void addDeclaration(std::unique_ptr<NodeDeclaration> declaration) {
 		lhs.emplace_back(std::move(declaration));
 	}

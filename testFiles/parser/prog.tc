@@ -1,0 +1,47 @@
+# int add(int a, int b) {
+    return a + b;
+}
+
+int subtract(int a, int b) {
+    return a - b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}
+
+int divide(int a, int b) {
+    if (b != 0) {
+        return a / b;
+    }
+    return 0;
+}
+
+int isPositive(int a) {
+    return a > 0;
+}
+
+int emptyFunction() {
+    return 0;
+}
+
+int main() {
+	int i;
+	i = 1;
+    }
+int result(){
+
+    result = add(x, y);
+   
+    result = subtract(x, y);
+    
+    result = multiply(x, y);
+  
+    result = divide(x, y);
+  
+    result = negation(x);
+
+    emptyFunction(x);
+
+    return 0;
+}

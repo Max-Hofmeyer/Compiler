@@ -1,6 +1,7 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 03/23/2024
 
 #include "ast.hpp"
+#include "cliConfig.h"
 
 //needed for visit: https://en.cppreference.com/w/cpp/utility/variant/visit
 template<class... Ts>
@@ -8,43 +9,55 @@ struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
 void NodeToyCProgram::print(std::ostream& out) const {
+    out << "<< Abstract Syntax >> \n";
+
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "ToyCProgram:\n";
+    out << p.spaces() << "ToyCProgram(\n";
+    p.indent();
+    out << p.spaces() << "sourceCodeFile(" << CliConfig::fileName << "),\n";
+    out << p.spaces() << "[\n";
     p.indent();
     for (const auto& def : definitions) {
         def->print(out);
         out << "\n";
     }
     p.outdent();
-}
-
-void NodeDefinition::print(std::ostream& out) const {
-    auto& p = PrettyPrint::Indentation();
-    lhs->print(out);
-    if (rhs.has_value()) rhs.value()->print(out);
-}
-
-void NodeFunctionDefinition::print(std::ostream& out) const {
-    auto& p = PrettyPrint::Indentation();
-    out <<" "<< "FunctionDefinition( \n";
-    p.indent();
-    lhs->print(out);
-    out << ",\n";
-    rhs->print(out);
+    out << p.spaces() << "]";
     p.outdent();
     out << "\n" << p.spaces() << ")";
 }
 
+void NodeDefinition::print(std::ostream& out) const {
+    auto& p = PrettyPrint::Indentation();
+    out << p.spaces() << "FunctionDefinition(\n";
+    p.indent();
+    lhs->print(out);
+    out << "\n";
+    if (rhs.has_value()) rhs.value()->print(out);
+    p.outdent();
+    out << "\n" << p.spaces() << ")";
+}
+
+void NodeFunctionDefinition::print(std::ostream& out) const {
+    auto& p = PrettyPrint::Indentation();
+
+    lhs->print(out);
+    out << "\n";
+    rhs->print(out);
+}
+
 void NodeFunctionHeader::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "FunctionHeader(";
+    out << p.spaces() << "FunctionHeader(\n";
+    p.indent();
     if (lhs.has_value() && lhs != nullptr) lhs.value()->print(out);
-    out << ")";
+    p.outdent();
+    out << p.spaces() << ")";
 }
 
 void NodeFunctionBody::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "functionBody(\n";
+    out << p.spaces() << "FunctionBody(\n";
     p.indent();
     lhs->print(out);
     p.outdent();
@@ -61,10 +74,10 @@ void NodeFormalParamList::print(std::ostream& out) const {
     //out << p.spaces() << "formalParamList(";
     lhs->print(out);
     for (const auto& param : rhs) {
-        out << ", ";
+        out << ", \n";
         param->print(out);
     }
-    out << ")";
+    out << ", \n";
 }
 
 void NodeStatement::print(std::ostream& out) const {
@@ -114,17 +127,21 @@ void NodeCompoundStatement::print(std::ostream& out) const {
 
 void NodeIfStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "IfStatement( ";
-    lhs->print(out);
-    out << ",\n";
+    out << p.spaces() << "IfStatement(\n";
     p.indent();
-    mhs->print(out);
-    if (rhs) {
+    out << p.spaces();
+	lhs->print(out);
+    out << ",\n";
+    if (mhs) {
+        mhs->print(out);
         out << ",\n";
+    }
+    if (rhs) {
         rhs.value()->print(out);
+        out << "\n";
     }
     p.outdent();
-    out << "\n" << p.spaces() << ")";
+    out << p.spaces() << ")";
 }
 
 void NodeNullStatement::print(std::ostream& out) const {
@@ -143,11 +160,14 @@ void NodeReturnStatement::print(std::ostream& out) const {
 
 void NodeWhileStatement::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
-    out << p.spaces() << "WhileStatement( ";
+    out << p.spaces() << "WhileStatement(\n";
+    p.indent();
+    out << p.spaces();
     lhs->print(out);
     out << ", \n";
     rhs->print(out);
-    out << ")";
+    p.outdent();
+    out << "\n" << p.spaces() << ")";
 }
 
 void NodeReadStatement::print(std::ostream& out) const {
@@ -229,7 +249,7 @@ void NodeFunctionCall::print(std::ostream& out) const {
         lhs.value()->print(out);
     }
     else {
-        out << "functionCall()"; // Adjust based on your structure if needed
+        out << "functionCall()";
     }
 }
 

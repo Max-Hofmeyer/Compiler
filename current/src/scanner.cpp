@@ -2,27 +2,21 @@
 
 #include "scanner.h"
 
-token Scanner::getNextToken() {
+token Scanner::getNextToken(bool display) {
+	_display = display;
 	hasError = false;
 	std::string buffer;
+	if (peek().has_value()) {
+		checkWhiteSpace();
+		if (checkComments()) return createToken(Tokens::eof, line, "EOF", "EOF", false);
 
-	if (peek().has_value()) {
-		if (peek().value() == '\n') {
-			line++;
-			eat();
-		}
-		while (peek().has_value() && std::isspace(peek().value())) {
-			eat();
-		}
-	}
-	if (peek().has_value()) {
 		//keywords
 		if (std::isalpha(peek().value())) {
 			buffer.push_back(eat());
 			while (peek().has_value() && std::isalnum(peek().value())) { buffer.push_back(eat()); }
 
 			if (buffer == "return") {
-				return createToken(Tokens::_return, line, "RETURN", buffer, true);
+				return createToken(Tokens::_return, line, "RETURN",  buffer, true);
 			}
 			if (buffer == "int") {
 				return createToken(Tokens::_int, line, "INT", buffer, true);
@@ -72,7 +66,6 @@ token Scanner::getNextToken() {
 
 			return createToken(Tokens::ID, line, "ID", buffer, true);
 		}
-		std::cout << buffer;
 		//numbers
 		while (std::isdigit(peek().value())) {
 			buffer.push_back(eat());
@@ -97,43 +90,6 @@ token Scanner::getNextToken() {
 
 			return createToken(Tokens::number, line, "NUMBER", buffer, false);
 		}
-		//inline comments
-		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '/') {
-			eat();
-			eat();
-			while (peek().has_value() && peek().value() != '\n') {
-				eat();
-			}
-		}
-		//block comments
-		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
-			eat();
-			eat();
-			//the simple way to handle block comments
-			int nestedCommentCount = 1;
-			while (nestedCommentCount > 0) {
-				//if comment doesn't end before eof is reached
-				if (!peek().has_value()) return createToken(Tokens::eof, line, "EOF", "EOF", false);;
-				if (peek().value() == '\n') line++;
-				if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
-					eat();
-					eat();
-					nestedCommentCount++;
-				}
-				else if (peek().value() == '*' && peek(1).has_value() && peek(1).value() == '/') {
-					eat();
-					eat();
-					nestedCommentCount--;
-				}
-				else eat();
-			}
-		}
-		//newline
-		if (peek().value() == '\n') {
-			line++;
-			eat();
-		}
-
 		//strings
 		if (peek().value() == '\"') {
 			buffer.push_back(eat());
@@ -170,42 +126,42 @@ token Scanner::getNextToken() {
 			return createToken(Tokens::lparen, line, "LPAREN", "(", false);
 		}
 		//RPAREN ())
-		if (peek().value() == ')') {
+		else if (peek().value() == ')') {
 			eat();
 			return createToken(Tokens::rparen, line, "RPAREN", ")", false);
 		}
 		//LCURLY ({)
-		if (peek().value() == '{') {
+		else if (peek().value() == '{') {
 			eat();
 			return createToken(Tokens::lcurly, line, "LCURLY", "{", false);
 		}
 		//RCURLY (})
-		if (peek().value() == '}') {
+		else if (peek().value() == '}') {
 			eat();
 			return createToken(Tokens::rcurly, line, "RCURLY", "}", false);
 		}
 		//LBRACKET([)
-		if (peek().value() == '[') {
+		else if (peek().value() == '[') {
 			eat();
 			return createToken(Tokens::lbracket, line, "LBRACKET", "[", false);
 		}
 		//RBRACKET (])
-		if (peek().value() == ']') {
+		else if (peek().value() == ']') {
 			eat();
 			return createToken(Tokens::rbracket, line, "RBRACKET", "]", false);
 		}
 		//COMMA (,)
-		if (peek().value() == ',') {
+		else if (peek().value() == ',') {
 			eat();
 			return createToken(Tokens::comma, line, "COMMA", ",", false);
 		}
 		//SEMICOLON (;)
-		if (peek().value() == ';') {
+		else if (peek().value() == ';') {
 			eat();
 			return createToken(Tokens::semicolon, line, "SEMICOLON", ";", true);
 		}
 		//RELOP(!=) or NOT(!)
-		if (peek().value() == '!') {
+		else if (peek().value() == '!') {
 			if (peek(1).has_value() && peek(1).value() == '=') {
 				eat();
 				eat();
@@ -215,7 +171,7 @@ token Scanner::getNextToken() {
 			return createToken(Tokens::_not, line, "NOT", "!", false);
 		}
 		//RELOP (<= or <)
-		if (peek().value() == '<') {
+		else if (peek().value() == '<') {
 			if (peek(1).has_value() && peek(1).value() == '=') {
 				eat();
 				eat();
@@ -225,7 +181,7 @@ token Scanner::getNextToken() {
 			return createToken(Tokens::relop, line, "RELOP", "<", false);
 		}
 		//RELOP (>= or >)
-		if (peek().value() == '>') {
+		else if (peek().value() == '>') {
 			if (peek(1).has_value() && peek(1).value() == '=') {
 				eat();
 				eat();
@@ -235,22 +191,22 @@ token Scanner::getNextToken() {
 			return createToken(Tokens::relop, line, "RELOP", ">", false);
 		}
 		//COLON (:)
-		if (peek().value() == ':') {
+		else if (peek().value() == ':') {
 			eat();
 			return createToken(Tokens::colon, line, "COLON", ":", false);
 		}
 		//ADDOP (-)
-		if (peek().value() == '-') {
+		else if (peek().value() == '-') {
 			eat();
 			return createToken(Tokens::addop, line, "ADDOP", "-", false);
 		}
 		//ADDOP (+)
-		if (peek().value() == '+') {
+		else if (peek().value() == '+') {
 			eat();
 			return createToken(Tokens::addop, line, "ADDOP", "+", false);
 		}
 		//ADDOP (||)
-		if (peek().value() == '|') {
+		else if (peek().value() == '|') {
 			if (peek(1).has_value() && peek(1).value() == '|') {
 				eat();
 				eat();
@@ -258,22 +214,22 @@ token Scanner::getNextToken() {
 			}
 		}
 		//MULOP (*)
-		if (peek().value() == '*') {
+		else if (peek().value() == '*') {
 			eat();
 			return createToken(Tokens::mulop, line, "MULOP", "*", false);
 		}
 		//MULOP (%)
-		if (peek().value() == '%') {
+		else if (peek().value() == '%') {
 			eat();
 			return createToken(Tokens::mulop, line, "MULOP", "%", false);
 		}
 		//MULOP (/)
-		if (peek().value() == '/') {
+		else if (peek().value() == '/') {
 			eat();
 			return createToken(Tokens::mulop, line, "MULOP", "/", false);
 		}
 		//MULOP (&&)
-		if (peek().value() == '&') {
+		else if (peek().value() == '&') {
 			if (peek(1).has_value() && peek(1).value() == '&') {
 				eat();
 				eat();
@@ -281,7 +237,7 @@ token Scanner::getNextToken() {
 			}
 		}
 		//ASSIGNOP (=)
-		if (peek().value() == '=') {
+		else if (peek().value() == '=') {
 			if (peek(1).has_value() && peek(1).value() == '=') {
 				eat();
 				eat();
@@ -290,15 +246,60 @@ token Scanner::getNextToken() {
 			eat();
 			return createToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
 		}
-		//whitespace
-
-
-		//anything else must be illegal
-		auto illegalChar = std::string(1, peek().value());
-		Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
-		eat();
+		else {
+			if (isspace(peek().value())) {
+				checkWhiteSpace();
+				return getNextToken();
+			}
+			auto illegalChar = std::string(1, peek().value());
+			Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
+			eat();
+			return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
+		}
 	}
-	return createToken(Tokens::eof, line, "EOF", "EOF", false);
+	if (!peek().has_value()) return createToken(Tokens::eof, line, "EOF", "EOF", false);
+}
+
+void Scanner::checkWhiteSpace() {
+	if (peek().has_value()) {
+		//space
+		while (peek().has_value() && std::isspace(peek().value()) && peek().value() != '\n') {
+			eat();
+		}
+		while(peek().has_value() && peek().value() == '\n') {
+			line++;
+			eat();
+		}
+	}
+}
+
+bool Scanner::checkComments() {
+	if (peek().has_value()) {
+		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
+			eat();
+			eat();
+			//the simple way to handle block comments
+			int nestedCommentCount = 1;
+			while (nestedCommentCount > 0) {
+				//if comment doesn't end before eof is reached
+				if (!peek().has_value()) return true;
+				if (peek().value() == '\n') line++;
+				if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
+					eat();
+					eat();
+					nestedCommentCount++;
+				}
+				else if (peek().value() == '*' && peek(1).has_value() && peek(1).value() == '/') {
+					eat();
+					eat();
+					nestedCommentCount--;
+				}
+				else eat();
+			}
+		}
+	}
+	else return true;
+	return false;
 }
 
 //looks at a character from the source string, default offset is 0
@@ -316,10 +317,11 @@ char Scanner::eat() {
 	return source_.at(_index++);
 }
 
+
 token Scanner::createToken(Tokens tokenType, int line, const std::string& buffer, const std::string& value,
                            const bool isKeyword) {
 	const token t{tokenType, line, buffer, value, isKeyword};
-	Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
+	if(_display) Logger::scanner("(<" + t.typeString + ">,\"" + value + "\")");
 	return t;
 }
 

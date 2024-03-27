@@ -14,7 +14,7 @@ void assignLogLevel() {
 }
 
 int main(int argc, char** argv) {
-	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024" << "\n";
+	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 03/27/2024" << "\n";
 
 	CliConfig::ParseCli(argc, argv);
 	if (CliConfig::hasError) return EXIT_FAILURE;
@@ -23,9 +23,10 @@ int main(int argc, char** argv) {
 	if (CliConfig::LoadFile()) {
 		Scanner scanner(std::move(CliConfig::fileContents));
 		Parser parser(scanner);
+		parser.dumpAST = CliConfig::dumpAST;
 		if (!parser.hasError) {
 			parser.begin();
-		}
+		} 
 		return EXIT_FAILURE;
 	}
 	return EXIT_FAILURE;
