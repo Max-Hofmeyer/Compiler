@@ -2,7 +2,7 @@ int main() {
     int x;
 }
 
-/*
+
 int main() {
     int y;
     if (y > 0) {

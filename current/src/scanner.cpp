@@ -257,7 +257,8 @@ token Scanner::getNextToken(bool display) {
 			return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
 		}
 	}
-	if (!peek().has_value()) return createToken(Tokens::eof, line, "EOF", "EOF", false);
+	return createToken(Tokens::eof, line, "EOF", "EOF", false);
+	//return 
 }
 
 void Scanner::checkWhiteSpace() {

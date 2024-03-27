@@ -2,9 +2,9 @@
 
 #pragma once
 #include <optional>
-#include "logger.h"
 #include "ast.hpp"
 #include "scanner.h"
+#include "cliConfig.h"
 
 class Parser{
 public:

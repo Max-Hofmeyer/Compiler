@@ -7,7 +7,9 @@ void Parser::begin() {
 	auto program = std::make_unique<NodeToyCProgram>();
 	while (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
 		auto prog = parseToyCProgram();
-		if (!hasError && dumpAST) prog->print(std::cout);
+		if (!hasError && (dumpAST || CliConfig::verboseEnabled)) {
+			prog->print(std::cout);
+		}
 	}
 }
 

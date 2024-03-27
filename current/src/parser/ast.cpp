@@ -24,7 +24,7 @@ void NodeToyCProgram::print(std::ostream& out) const {
     p.outdent();
     out << p.spaces() << "]";
     p.outdent();
-    out << "\n" << p.spaces() << ")";
+    out << "\n" << p.spaces() << ")\n";
 }
 
 void NodeDefinition::print(std::ostream& out) const {
