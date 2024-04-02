@@ -13,8 +13,9 @@ public:
     static void ParseCli(int count, char** arguments);
     static bool LoadFile();
     static int debugLevel;
-    static bool verboseEnabled, dumpAST, hasError;
-    static std::string filePath, fileContents, fileName;
+    static bool verboseEnabled, hasError, dumpAST, dumpST, dumpCode, customClass, customOutput;
+    static std::string filePath, fileContents, fileName, className, outputName;
+
 private:
     static void OutputHelp();
     static void CheckForFile(const std::string& arg);
