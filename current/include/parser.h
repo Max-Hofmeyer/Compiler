@@ -5,16 +5,17 @@
 #include "ast.hpp"
 #include "scanner.h"
 #include "cliConfig.h"
+#include "symbolTable.h"
 
 class Parser{
 public:
-	explicit Parser(Scanner& scanner) : _scanner(scanner){}
+	explicit Parser(Scanner& scanner, SymbolTable& table) : _scanner(scanner), _table(table) {}
 	void begin();
 	bool hasError = false;
 	bool dumpAST = false;
 
 private:
-	Scanner& _scanner;
+
 	/* Syntax definitions */
 	std::unique_ptr<NodeToyCProgram> parseToyCProgram();
 	std::unique_ptr<NodeDefinition> parseDefinition();
@@ -44,11 +45,14 @@ private:
 	token parseIdentifier();
 
 	/* Class variables */
+	Scanner& _scanner;
+	SymbolTable& _table;
 	std::vector<token> _tokenBuffer;
 	std::vector<token> _errorBuffer;
 	size_t _index = 0;
 	int currentLine = 0;
 	bool parsingStarted = false;
+
 
 
 	/* Syntax check helpers */

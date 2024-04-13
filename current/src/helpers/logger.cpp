@@ -25,22 +25,23 @@ void Logger::parser(const std::string& message) {
 
 void Logger::parserEnter(const std::string& message) {
 	if (logLevel == Level::Parser || logLevel == Level::Verbose
-		&& !hasError){
+		&& !hasError) {
 		std::cout << "[PARSER] Entering " << message << "\n";
 	}
 }
 
 void Logger::parserExit(const std::string& message) {
 	if (logLevel == Level::Parser || logLevel == Level::Verbose
-		&& !hasError){
+		&& !hasError) {
 		std::cout << "[PARSER] Exiting " << message << "\n";
 	}
 }
 
-void Logger::outputToken(const token t) {
-	//if (logLevel == Level::Parser) {
-	//std::cout << "[EATING] " << t.typeString << " " << t.value << "\n";
-	//}
+void Logger::codeGenerator(const std::string& message) {
+	if (logLevel <= Level::CodeGenerator || logLevel <= Level::Verbose 
+		&& !hasError) {
+		std::cout << "[GENERATOR] " << message << "\n";
+	}
 }
 
 void Logger::outputTokens(const std::vector<token> t) {
@@ -51,12 +52,6 @@ void Logger::outputTokens(const std::vector<token> t) {
 void Logger::debug(const std::string& message) {
 	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
 		std::cout << "[DEBUG] " << message << "\n";
-	}
-}
-
-void Logger::codeGenerator(const std::string& message) {
-	if (logLevel <= Level::CodeGenerator || logLevel <= Level::Verbose) {
-		std::cout << "[GENERATOR] " << message << "\n";
 	}
 }
 

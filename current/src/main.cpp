@@ -19,15 +19,17 @@ int main(int argc, char** argv) {
 	CliConfig::ParseCli(argc, argv);
 	if (CliConfig::hasError) return EXIT_FAILURE;
 	assignLogLevel();
+	if (!CliConfig::LoadFile()) return EXIT_FAILURE;
 
-	if (CliConfig::LoadFile()) {
-		Scanner scanner(std::move(CliConfig::fileContents));
-		Parser parser(scanner);
-		parser.dumpAST = CliConfig::dumpAST;
-		if (!parser.hasError) {
-			parser.begin();
-		} 
-		return EXIT_FAILURE;
+	Scanner scanner(std::move(CliConfig::fileContents));
+	SymbolTable table;
+	Parser parser(scanner, table);
+	parser.dumpAST = CliConfig::dumpAST;
+
+	if (!parser.hasError) {
+		parser.begin();
+		table.dumpTable();
 	}
-	return EXIT_FAILURE;
+	else return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }

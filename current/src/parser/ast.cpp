@@ -262,3 +262,12 @@ void NodeActualParameters::print(std::ostream& out) const {
     }
     out << ")";
 }
+
+//void SymbolTable::print(std::ostream& out) {
+//    std::cout << "Symbol Table Contents:\n";
+//    for (const auto& pair : table) {
+//        const token& tok = pair.second;
+//        std::cout << "Name: " << pair.first << ", Type: " << tok.typeString
+//            << ", Line: " << tok.lineLoc << std::endl;
+//    }
+//}

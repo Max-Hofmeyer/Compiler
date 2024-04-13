@@ -6,7 +6,9 @@
 #include <variant>
 #include "tokens.h"
 #include "logger.h"
+#include "symbolTable.h"
 #include <optional>
+#include <unordered_map>
 
 class NodeToyCProgram;
 class NodeDefinition;
@@ -34,6 +36,7 @@ class NodeTerm;
 class NodePrimary;
 class NodeFunctionCall;
 class NodeActualParameters;
+class SymbolTable;
 
 class PrettyPrint {
 public:
@@ -116,9 +119,9 @@ public:
 };
 
 class NodeDeclaration : public Node {
+public:
 	token type;
 	token id;
-public:
 	explicit NodeDeclaration(token t, token ID)
 	: type(std::move(t)), id(std::move(ID)) {}
 
@@ -331,7 +334,6 @@ public:
 	void print(std::ostream& out) const override;
 };
 
-//check this first if shit breaks
 class NodePrimary : public Node {
 	using PrimaryVal = std::variant <
 		token, //handles num,string,char,id, - and not
@@ -379,3 +381,25 @@ public:
 
 	void print(std::ostream& out) const override;
 };
+
+//class SymbolTable {
+//private:
+//	std::unordered_map<std::string, token> table;
+//
+//public:
+//	bool insert(const token& tok) {
+//		if (table.find(tok.value) == table.end()) {
+//			table[tok.value] = tok;
+//			return true;
+//		}
+//		return false;
+//	}
+//
+//	const token* lookup(const std::string& name) const {
+//		auto it = table.find(name);
+//		if (it != table.end()) return &it->second;
+//		return nullptr;
+//	}
+//
+//	void print(std::ostream& out);
+//};
