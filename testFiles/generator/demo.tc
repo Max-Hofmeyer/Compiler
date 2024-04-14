@@ -1,15 +1,21 @@
 int isEven(int n){
-l = 5;
+	l = 5;
 	if ((n / 2) == 0)
 	return 1;
 	else
 	return 0;
 }
 
-int main() {
+int hello() {
 	int i;
 	i = 1;
 	while (i <= 10) {
+		int x;
+		x = i + 2;
+		while (i <= 20) {
+			int y;
+			y = i+1;
+		}
 		write(i);
 		if ( isEven(i) )
 		write(" is even");

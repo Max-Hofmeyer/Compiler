@@ -6,7 +6,6 @@
 #include <variant>
 #include "tokens.h"
 #include "logger.h"
-#include "symbolTable.h"
 #include <optional>
 #include <unordered_map>
 
@@ -87,10 +86,9 @@ public:
 };
 
 class NodeFunctionDefinition : public Node {
+public:
 	std::unique_ptr<NodeFunctionHeader> lhs;
 	std::unique_ptr<NodeFunctionBody> rhs;
-
-public:
 	explicit NodeFunctionDefinition(std::unique_ptr<NodeFunctionHeader> header, std::unique_ptr<NodeFunctionBody> body)
 		: lhs(std::move(header)), rhs(std::move(body)) {}
 
@@ -98,9 +96,8 @@ public:
 };
 
 class NodeFunctionHeader : public Node {
-	std::optional<std::unique_ptr<NodeFormalParamList>> lhs;
-
 public:
+	std::optional<std::unique_ptr<NodeFormalParamList>> lhs;
 	NodeFunctionHeader() : lhs(std::nullopt) {}
 
 	explicit NodeFunctionHeader(std::unique_ptr<NodeFormalParamList> paramlist) :
@@ -110,8 +107,8 @@ public:
 };
 
 class NodeFunctionBody : public Node {
-	std::unique_ptr<NodeCompoundStatement> lhs;
 public:
+	std::unique_ptr<NodeCompoundStatement> lhs;
 	explicit NodeFunctionBody(std::unique_ptr<NodeCompoundStatement> stmt)
 		: lhs(std::move(stmt)) {}
 
@@ -129,10 +126,9 @@ public:
 };
 
 class NodeFormalParamList : public Node {
+public:
 	std::unique_ptr<NodeDeclaration> lhs;
 	std::vector<std::unique_ptr<NodeDeclaration>> rhs;
-
-public:
 	explicit NodeFormalParamList(std::unique_ptr<NodeDeclaration> lhsToks)
 		: lhs(std::move(lhsToks)) {}
 
@@ -144,6 +140,7 @@ public:
 };
 
 class NodeStatement : public Node {
+public:
 	using StatementVal = std::variant <
 		std::unique_ptr<NodeExpressionStatement>,
 		std::unique_ptr<NodeBreakStatement>,
@@ -157,15 +154,14 @@ class NodeStatement : public Node {
 		std::unique_ptr<NodeNewLineStatement>>;
 	StatementVal val;
 
-public:
 	explicit NodeStatement(StatementVal val) : val(std::move(val)) {}
 	void print(std::ostream& out) const override;
 };
 
 class NodeExpressionStatement : public Node {
+public:
 	std::unique_ptr<NodeExpression> exp;
 
-public:
 	explicit NodeExpressionStatement(std::unique_ptr<NodeExpression> expr) : exp(std::move(expr)) {}
 	void print(std::ostream& out) const override;
 };
@@ -191,11 +187,11 @@ public:
 };
 
 class NodeIfStatement : public Node {
+public:
 	std::unique_ptr<NodeExpression> lhs;
 	std::unique_ptr<NodeStatement> mhs;
 	std::optional<std::unique_ptr<NodeStatement>> rhs;
 
-public:
 	//constructor for if w/o an else
 	explicit NodeIfStatement(std::unique_ptr<NodeExpression> expr,
 		std::unique_ptr<NodeStatement> state) :
@@ -219,9 +215,9 @@ public:
 };
 
 class NodeReturnStatement : public Node {
+public:
 	std::optional<std::unique_ptr<NodeExpression>> lhs;
 
-public:
 	//when there is no statement to return
 	NodeReturnStatement() : lhs(std::nullopt) {}
 
@@ -232,10 +228,10 @@ public:
 };
 
 class NodeWhileStatement : public Node {
+public:
 	std::unique_ptr<NodeExpression> lhs;
 	std::unique_ptr<NodeStatement> rhs;
 
-public:
 	explicit NodeWhileStatement(std::unique_ptr<NodeExpression> expr, 
 								std::unique_ptr<NodeStatement> state) :
 								lhs(std::move(expr)),
@@ -246,10 +242,10 @@ public:
 };
 
 class NodeReadStatement : public Node {
+public:
 	token lhs;
 	std::vector<token> rhs;
 
-public:
 	explicit NodeReadStatement(token lhsID) : lhs(std::move(lhsID)) {}
 
 	void addRHS(token id) {
@@ -260,9 +256,9 @@ public:
 };
 
 class NodeWriteStatement : public Node {
+public:
 	std::unique_ptr<NodeActualParameters> lhs;
 
-public:
 	explicit NodeWriteStatement(std::unique_ptr<NodeActualParameters> lhsParm) : lhs(std::move(lhsParm)) {}
 
 	void print(std::ostream& out) const override;
@@ -276,11 +272,11 @@ public:
 };
 
 class NodeExpression : public Node {
+public:
 	std::unique_ptr<NodeRelopExpression> lhs;
-	//C++ shenanigans.. its just a vector of [<token (assignop), Expression>, <token (assignop), Expression>]
+	//C++ shenanigans.. its just a vector of [<token (relop), Expression>, <token (assignop), Expression>]
 	std::vector<std::pair<token, std::unique_ptr<NodeRelopExpression>>> rhs;
 
-public:
 	explicit NodeExpression(std::unique_ptr<NodeRelopExpression> lhsExpr)
 		: lhs(std::move(lhsExpr)) {}
 
@@ -291,12 +287,11 @@ public:
 };
 
 class NodeRelopExpression : public Node {
+public:
 	std::unique_ptr<NodeSimpleExpression> lhs;
 	std::vector<std::pair<token, std::unique_ptr<NodeSimpleExpression>>> rhs;
-
-public:
 	explicit NodeRelopExpression(std::unique_ptr<NodeSimpleExpression> lhsExpr)
-	: lhs(std::move(lhsExpr)) {}
+		: lhs(std::move(lhsExpr)) {}
 
 	void addRHS(token relop, std::unique_ptr<NodeSimpleExpression> expr) {
 		rhs.emplace_back(std::move(relop), std::move(expr));
@@ -305,10 +300,10 @@ public:
 };
 
 class NodeSimpleExpression : public Node {
+public:
 	std::unique_ptr<NodeTerm> lhs;
 	std::vector<std::pair<token, std::unique_ptr<NodeTerm>>> rhs;
 
-public:
 	explicit NodeSimpleExpression(std::unique_ptr<NodeTerm> lhsExpr)
 		: lhs(std::move(lhsExpr)) {}
 
@@ -320,10 +315,10 @@ public:
 };
 
 class NodeTerm : public Node {
+public:
 	std::unique_ptr<NodePrimary> lhs;
 	std::vector<std::pair<token, std::unique_ptr<NodePrimary>>> rhs;
 
-public:
 	explicit NodeTerm(std::unique_ptr<NodePrimary> lhsExpr)
 		: lhs(std::move(lhsExpr)) {}
 
@@ -335,6 +330,7 @@ public:
 };
 
 class NodePrimary : public Node {
+public:
 	using PrimaryVal = std::variant <
 		token, //handles num,string,char,id, - and not
 		std::unique_ptr<NodeExpression>,
@@ -344,7 +340,6 @@ class NodePrimary : public Node {
 	std::optional<std::unique_ptr<NodeFunctionCall>> rhs;
 
 	
-public:
 	explicit NodePrimary(token t) : val(std::move(t)) {}
 
 	NodePrimary(token t, std::unique_ptr<NodeFunctionCall> func)
@@ -357,9 +352,9 @@ public:
 };
 
 class NodeFunctionCall : public Node {
+public:
 	std::optional<std::unique_ptr<NodeActualParameters>> lhs;
 
-public:
 	NodeFunctionCall() : lhs(std::nullopt) {}
 	explicit NodeFunctionCall(std::unique_ptr<NodeActualParameters> expr) :
 		lhs(std::move(expr)) {}
@@ -368,10 +363,10 @@ public:
 };
 
 class NodeActualParameters : public Node {
+public:
 	std::unique_ptr<NodeExpression> lhs;
 	std::vector<std::unique_ptr<NodeExpression>> rhs;
 
-public:
 	explicit NodeActualParameters(std::unique_ptr<NodeExpression> lhsExpr)
 		: lhs(std::move(lhsExpr)) {}
 
@@ -381,25 +376,3 @@ public:
 
 	void print(std::ostream& out) const override;
 };
-
-//class SymbolTable {
-//private:
-//	std::unordered_map<std::string, token> table;
-//
-//public:
-//	bool insert(const token& tok) {
-//		if (table.find(tok.value) == table.end()) {
-//			table[tok.value] = tok;
-//			return true;
-//		}
-//		return false;
-//	}
-//
-//	const token* lookup(const std::string& name) const {
-//		auto it = table.find(name);
-//		if (it != table.end()) return &it->second;
-//		return nullptr;
-//	}
-//
-//	void print(std::ostream& out);
-//};

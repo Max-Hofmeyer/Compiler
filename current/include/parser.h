@@ -9,11 +9,10 @@
 
 class Parser{
 public:
-	explicit Parser(Scanner& scanner, SymbolTable& table) : _scanner(scanner), _table(table) {}
-	void begin();
+	explicit Parser(Scanner& scanner) : _scanner(scanner) {}
+	std::unique_ptr<NodeToyCProgram> begin();
 	bool hasError = false;
 	bool dumpAST = false;
-
 private:
 
 	/* Syntax definitions */
@@ -46,14 +45,12 @@ private:
 
 	/* Class variables */
 	Scanner& _scanner;
-	SymbolTable& _table;
+	//SymbolTable& _table;
 	std::vector<token> _tokenBuffer;
 	std::vector<token> _errorBuffer;
 	size_t _index = 0;
-	int currentLine = 0;
+	int scope = 0;
 	bool parsingStarted = false;
-
-
 
 	/* Syntax check helpers */
 	bool isTypeLit(const token& t);

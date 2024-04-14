@@ -46,6 +46,11 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		else if (arg == "-code") dumpCode = true;
 		else CheckForFile(arg);
 	}
+	if (verboseEnabled) {
+		dumpCode = true;
+		dumpAST = true;
+		dumpST = true;
+	}
 }
 
 //bool so we can check if it worked or not
@@ -84,19 +89,19 @@ void CliConfig::CheckForFile(const std::string& arg) {
 void CliConfig::OutputHelp() {
 	std::cout
 		<< "Usage: ./part3 [options] toyc_source_file.tc\n"
-		<< "\nwhere options include:\n"
-		<< "  -help				Display this usage message\n"
-		<< "  -output <file>	Specifies target file name"
-		<< "  -class <file>		Specifies class file name"
-		<< "  -debug <level>    Display messages that aid in tracing the compilation process.\n"
-		<< "                    If level is:\n"
-		<< "						0 - all messages\n"
-		<< "						1 - scanner messages only\n"
-		<< "						2 - parser messages only\n"
-		<< "						3 - code generation messages only\n"
-		<< "  -abstract			Dump the abstract syntax tree\n"
-		<< "  -symbol			Dump the symbol table(s)"
-		<< "  -code				Dump the generated program\n"
-		<< "  -verbose			Display all information\n";
+		<< "\nWhere options include:\n"
+		<< "  -help			Display this usage message\n"
+		<< "  -output <file>	Specifies target file name\n"
+		<< "  -class <file>		Specifies class file name\n"
+		<< "  -debug <level>	Display messages that aid in tracing the compilation process.\n"
+		<< "			If level is:\n"
+		<< "				0 - all messages\n"
+		<< "				1 - scanner messages only\n"
+		<< "				2 - parser messages only\n"
+		<< "				3 - code generation messages only\n"
+		<< "  -abstract		Dump the abstract syntax tree\n"
+		<< "  -symbol		Dump the symbol table(s)\n"
+		<< "  -code			Dump the generated program\n"
+		<< "  -verbose		Display all information\n";
 }
 

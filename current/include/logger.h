@@ -29,6 +29,7 @@ public:
     static void warning(const std::string& message);
     static void error(const std::string& message);
     static void parserError(const std::string& message, const int lc, const std::vector<token> t, const int spaces);
+    static void semanticAnalyzer(const std::string& message);
 	static bool hasError;
 
 private:

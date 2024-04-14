@@ -23,7 +23,7 @@ class SymbolTable {
 public:
     void enterScope() { _scope++; }
     void exitScope() { _scope--;  }
-	bool insertSymbol(std::string id, const token& type);
+	bool insertSymbol(std::string id, const token& type, int scope = 0);
     bool checkForSymbol(const std::string& id);
     Symbol* retrieveSymbol(const std::string& id);
     void dumpTable();

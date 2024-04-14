@@ -1,15 +1,13 @@
 //Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/27/2024
 #include "parser.h"
 
-void Parser::begin() {
+std::unique_ptr<NodeToyCProgram> Parser::begin() {
 	_scanner.hasError = false;
 	addTokenToBuffer();
-	auto program = std::make_unique<NodeToyCProgram>();
 	if (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
-		auto prog = parseToyCProgram();
-		if (!hasError && (dumpAST || CliConfig::verboseEnabled)) {
-			prog->print(std::cout);
-		}
+		auto program = parseToyCProgram();
+		if (!hasError) return program;
+		return nullptr;
 	}
 }
 
@@ -43,7 +41,7 @@ std::unique_ptr<NodeDefinition> Parser::parseDefinition() {
 		if (peekSafe().type == Tokens::ID) {
 			token id = parseIdentifier();
 			declaration = std::make_unique<NodeDeclaration>(type, id);
-			if (declaration) _table.insertSymbol(id.value, type);
+			//if (declaration) _table.insertSymbol(id.value, type, scope);
 			if (peekSafe().type == Tokens::lparen) function = parseFunctionDefinition();
 			else if (peekSafe().type != Tokens::semicolon) {
 				reportError("';'");
@@ -76,10 +74,10 @@ std::unique_ptr<NodeFunctionDefinition> Parser::parseFunctionDefinition() {
 	if (hasError) return nullptr;
 
 	Logger::parserEnter("FunctionDefinition");
+	scope++;
 	std::unique_ptr<NodeFunctionHeader> header = parseFunctionHeader();
-	_table.enterScope();
 	std::unique_ptr<NodeFunctionBody> body = parseFunctionBody();
-	_table.exitScope();
+	scope--;
 	Logger::parserExit("FunctionDefinition");
 
 	if (header && body) return std::make_unique<NodeFunctionDefinition>(std::move(header), std::move(body));
@@ -94,6 +92,7 @@ std::unique_ptr<NodeFunctionHeader> Parser::parseFunctionHeader() {
 	if (checkAndEatToken(Tokens::lparen)) {
 		if (peekSafe().type != Tokens::rparen) {
 			checkAndEatToken(Tokens::rparen);
+
 			param = parseFormalParamList();
 			if (checkAndEatToken(Tokens::rparen) && param) {
 				Logger::parserExit("FunctionHeader");
@@ -132,7 +131,7 @@ std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
 		if (peekSafe().type == Tokens::ID) {
 			token id = parseIdentifier();
 			if (auto declaration = std::make_unique<NodeDeclaration>(type, id)) {
-				_table.insertSymbol(id.value, type);
+				//_table.insertSymbol(id.value, type, scope);
 				formal = std::make_unique<NodeFormalParamList>(std::move(declaration));
 			}
 		}
@@ -144,7 +143,7 @@ std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
 				if (peekSafe().type == Tokens::ID) {
 					token nId = parseIdentifier();
 					if(auto nDeclaration = std::make_unique<NodeDeclaration>(nType, nId)) {
-						_table.insertSymbol(nId.value, nType);
+						//_table.insertSymbol(nId.value, nType, scope);
 						formal->addRHS(std::move(nDeclaration));
 					}
 				}
@@ -207,7 +206,7 @@ std::unique_ptr<NodeBreakStatement> Parser::parseBreakStatement() {
 
 std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 	if (hasError) return nullptr;
-	_table.enterScope();
+	scope++;
 	auto compound = std::make_unique<NodeCompoundStatement>();
 
 	Logger::parserEnter("CompoundStatement");
@@ -217,7 +216,7 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 			token id = parseIdentifier();
 			if (peekSafe().type != Tokens::semicolon) reportError("';'");
 			auto d = std::make_unique<NodeDeclaration>(type, id);
-			if (d) _table.insertSymbol(id.value, type);
+			//if (d) _table.insertSymbol(id.value, type, scope);
 
 			if (checkAndEatToken(Tokens::semicolon)) {
 				if (d) compound->addDeclaration(std::move(d));
@@ -239,7 +238,7 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 	}
 	else reportError("'{'");
 	Logger::parserExit("CompoundStatement");
-	_table.exitScope();
+	//scope--;
 	return compound;
 }
 

@@ -9,11 +9,13 @@
 //	_scope--;
 //}
 
-bool SymbolTable::insertSymbol(std::string id, const token& type) {
-	if (_table[id].empty() || _table[id].top().scopeLevel != _scope) {
-		Symbol s(id, type, _scope);
+bool SymbolTable::insertSymbol(std::string id, const token& type, int scope) {
+	if (scope == 0) scope = _scope;
+	auto it = _table.find(id);
+	if (it == _table.end() || it->second.top().scopeLevel != scope) {
+		Symbol s(id, type, scope);
 		_table[id].emplace(s);
-		_historicalTable.emplace_back(id,s);
+		_historicalTable.emplace_back(id, s);
 		return true;
 	}
 	return false;

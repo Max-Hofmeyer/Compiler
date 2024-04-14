@@ -9,7 +9,7 @@ struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
 void NodeToyCProgram::print(std::ostream& out) const {
-    out << "<< Abstract Syntax >> \n";
+    out << "\n<< Abstract Syntax >> \n";
 
     auto& p = PrettyPrint::Indentation();
     out << p.spaces() << "ToyCProgram(\n";
@@ -24,7 +24,7 @@ void NodeToyCProgram::print(std::ostream& out) const {
     p.outdent();
     out << p.spaces() << "]";
     p.outdent();
-    out << "\n" << p.spaces() << ")\n";
+    out << "\n" << p.spaces() << ")\n\n";
 }
 
 void NodeDefinition::print(std::ostream& out) const {
@@ -63,7 +63,7 @@ void NodeFunctionBody::print(std::ostream& out) const {
     p.outdent();
     out << "\n" << p.spaces() << ")";
 }
-
+ 
 void NodeDeclaration::print(std::ostream& out) const {
     auto& p = PrettyPrint::Indentation();
     out << p.spaces() << type.value << " " << id.value;

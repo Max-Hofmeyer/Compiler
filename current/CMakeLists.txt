@@ -13,7 +13,8 @@ add_executable(current
 	src/helpers/cliConfig.cpp
 	src/parser/parser.cpp
 	src/parser/ast.cpp
-	src/codeGeneration/symbolTable.cpp "include/semanticAnalyzer.h")
+	src/codeGeneration/symbolTable.cpp
+	src/codeGeneration/traverseAST.cpp)
 
 target_include_directories(current PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

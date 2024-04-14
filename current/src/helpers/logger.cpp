@@ -77,3 +77,9 @@ void Logger::parserError(const std::string& message, const int lc, const std::ve
 		hasError = true;
 	}
 }
+
+void Logger::semanticAnalyzer(const std::string& message) {
+	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
+		std::cout << "[ANALYZER] Checking " << message << "\n";
+	}
+}
