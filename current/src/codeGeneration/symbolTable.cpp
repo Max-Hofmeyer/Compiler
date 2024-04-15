@@ -14,10 +14,12 @@ bool SymbolTable::insertSymbol(std::string id, const token& type, int scope) {
 	auto it = _table.find(id);
 	if (it == _table.end() || it->second.top().scopeLevel != scope) {
 		Symbol s(id, type, scope);
+		Logger::symbolTable(type.value + " " + id + " in scope " + std::to_string(scope));
 		_table[id].emplace(s);
 		_historicalTable.emplace_back(id, s);
 		return true;
 	}
+	Logger::symbolTableWarning(type.value + " " + id + " in scope " + std::to_string(scope));
 	return false;
 }
 

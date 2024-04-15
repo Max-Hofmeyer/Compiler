@@ -7,6 +7,7 @@
 #include "traverseAST.h"
 
 void assignLogLevel() {
+	if (CliConfig::demo) Logger::demo = true;
 	if (CliConfig::verboseEnabled || CliConfig::debugLevel == 0) Logger::setLogLevel(Logger::Level::Verbose);
 	else if (CliConfig::debugLevel == 1) Logger::setLogLevel(Logger::Level::Scanner);
 	else if (CliConfig::debugLevel == 2) Logger::setLogLevel(Logger::Level::Parser);
@@ -29,12 +30,14 @@ int main(int argc, char** argv) {
 	//part 2
 	Parser parser(scanner);
 	auto program = parser.begin();
+
 	if (program == nullptr) return EXIT_FAILURE;
-	if (CliConfig::dumpAST) program->print(std::cout);
+	if (CliConfig::dumpAST || CliConfig::demo) program->print(std::cout);
 
 	//part 3
 	SymbolTable table;
 	TraverseAST ast(table, program);
+
 	ast.analyzeSemantics();
-	if(!ast.hasError && CliConfig::dumpST) table.dumpTable();
+	if(!ast.hasError && (CliConfig::dumpST || CliConfig::demo)) table.dumpTable();
 }

@@ -10,6 +10,7 @@ bool CliConfig::dumpST = false;
 bool CliConfig::dumpCode = false;
 bool CliConfig::customClass = false;
 bool CliConfig::customOutput = false;
+bool CliConfig::demo = false;
 
 std::string CliConfig::filePath;
 std::string CliConfig::fileContents;
@@ -34,7 +35,7 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		}
 		else if (arg == "-output") {
 			//prevents the rest of the arguments from being consumed after -output
-			if (i+1 < count && arguments[i+1][0] != '-') {
+			if (i + 1 < count && arguments[i + 1][0] != '-') {
 				outputName = arguments[++i];
 				customOutput = true;
 			}
@@ -44,6 +45,7 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		else if (arg == "-abstract") dumpAST = true;
 		else if (arg == "-symbol") dumpST = true;
 		else if (arg == "-code") dumpCode = true;
+		else if (arg == "-demo") demo = true;
 		else CheckForFile(arg);
 	}
 	if (verboseEnabled) {

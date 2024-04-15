@@ -40,7 +40,10 @@ private:
 	void analyzeFunctionCall(NodeFunctionCall& functionCall);
 	void analyzeActualParameters(NodeActualParameters& params);
 
-	//token getPrimaryType(NodePrimary& primary);
+	/* Helpers */
+	std::vector<token> extractTokensFromFunctionCall(const NodeFunctionCall& functionCall);
+	//bool isFunctionDeclared(NodeFunctionCall& functionCall);
+
 	void reportError(const std::string& message);
 
 	SymbolTable& _table;

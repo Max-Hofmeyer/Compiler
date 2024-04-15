@@ -29,8 +29,11 @@ public:
     static void warning(const std::string& message);
     static void error(const std::string& message);
     static void parserError(const std::string& message, const int lc, const std::vector<token> t, const int spaces);
+    static void symbolTable(const std::string& message);
+    static void symbolTableWarning(const std::string& message);
     static void semanticAnalyzer(const std::string& message);
 	static bool hasError;
+    static bool demo;
 
 private:
     static Level logLevel;

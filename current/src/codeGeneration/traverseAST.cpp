@@ -2,6 +2,8 @@
 
 #include "traverseAST.h"
 
+#include <ranges>
+
 //needed for visit: https://en.cppreference.com/w/cpp/utility/variant/visit
 template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
@@ -18,11 +20,13 @@ void TraverseAST::analyzeSemantics() {
     if (!mainInProg && !hasError) reportError("No main declared");
 }
 
-//uses NodeDeclaration
+
 void TraverseAST::analyzeDefinition(const NodeDefinition& definition) {
     if (hasError) return;
     Logger::semanticAnalyzer("definition");
-    _table.insertSymbol(definition.lhs->id.value, definition.lhs->type);
+    if(!_table.insertSymbol(definition.lhs->id.value, definition.lhs->type)) {
+        reportError(definition.lhs->id.value + " already declared within the scope");
+    }
     if (definition.rhs.has_value()) {
         analyzeFunctionDefinition(*definition.rhs.value());
     }
@@ -52,13 +56,18 @@ void TraverseAST::analyzeFunctionBody(const NodeFunctionBody& fBody) {
     analyzeCompoundStatement(*fBody.lhs);
 }
 
-//uses NodeDeclaration
 void TraverseAST::analyzeFormalParamList(const NodeFormalParamList& formalParamList) {
     if (hasError) return;
     Logger::semanticAnalyzer("formal parameters ");
-    _table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type);
+    if(!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type)) {
+        reportError(formalParamList.lhs->id.value + " already declared within the scope");
+    }
     for (auto& param : formalParamList.rhs) {
-        if (param) _table.insertSymbol(param->id.value, param->type);
+        if (param) {
+            if (!_table.insertSymbol(param->id.value, param->type)) {
+                reportError(param->id.value + "already declared within the scope");
+            }
+        }
         else Logger::semanticAnalyzer("NULLPTR in formalparamlist");
     }
 }
@@ -90,13 +99,14 @@ void TraverseAST::analyzeBreakStatement(NodeBreakStatement& breakStatement) {
     Logger::semanticAnalyzer("break statement");
 }
 
-//uses NodeDeclaration
 void TraverseAST::analyzeCompoundStatement(const NodeCompoundStatement& compoundStatement) {
     if (hasError) return;
     Logger::semanticAnalyzer("compound statement");
     //_table.enterScope();
     for (auto& declaration : compoundStatement.lhs) {
-        _table.insertSymbol(declaration->id.value, declaration->type);
+        if(!_table.insertSymbol(declaration->id.value, declaration->type)) {
+            reportError(declaration->id.value + " already declared within the scope");
+        }
     }
     for (auto& statement : compoundStatement.rhs) analyzeStatement(*statement);
     //_table.exitScope();
@@ -139,7 +149,7 @@ void TraverseAST::analyzeReadStatement(NodeReadStatement& readStatement) {
     if (hasError) return;
     Logger::semanticAnalyzer("read statement");
     for (const auto& id : readStatement.rhs) {
-        Logger::semanticAnalyzer("Reading variable: " + id.value);
+        Logger::semanticAnalyzer("reading " + id.value);
     }
 }
 
@@ -158,7 +168,7 @@ void TraverseAST::analyzeExpression(NodeExpression& expression) {
     if (hasError) return;
     Logger::semanticAnalyzer("expression");
     analyzeRelopExpression(*expression.lhs);
-    for (auto& [op, rhsExpr] : expression.rhs) {
+    for (auto& rhsExpr : expression.rhs | std::views::values) {
         analyzeRelopExpression(*rhsExpr);
     }
 }
@@ -186,6 +196,12 @@ void TraverseAST::analyzeTerm(NodeTerm& term) {
     Logger::semanticAnalyzer("term");
     analyzePrimary(*term.lhs);
     for (auto& [op, rhsPrimary] : term.rhs) {
+        if (op.value == "/") {
+            const auto& temp = rhsPrimary->val;
+            if (std::holds_alternative<token>(temp) && std::get<token>(temp).value == "0"){
+                reportError("cannot divide by 0");
+            }
+        }
         analyzePrimary(*rhsPrimary);
     }
 }
@@ -219,6 +235,9 @@ void TraverseAST::analyzePrimary(NodePrimary& primary) {
 void TraverseAST::analyzeFunctionCall(NodeFunctionCall& functionCall) {
     if (hasError) return;
     Logger::semanticAnalyzer("function call");
+    const std::vector<token> call = extractTokensFromFunctionCall(functionCall);
+    
+   // std::cout << "\n" <<call.value << "\n";
     if (functionCall.lhs.has_value()) {
         analyzeActualParameters(*functionCall.lhs.value());
     }
@@ -233,19 +252,47 @@ void TraverseAST::analyzeActualParameters(NodeActualParameters& params) {
     }
 }
 
-//token TraverseAST::getPrimaryType(NodePrimary& primary) {
-//    std::visit(overloaded{
-//    [this](const token& t) {
-//        if (t.type == Tokens::_int || t.type == Tokens::_char) {
-//				return t;
-//			}
-//		},
-//    }, primary.val);
-//    return token{ Tokens::ERROR, -1, "ERROR TOKEN", "ERROR VALUE", false };
+std::vector<token> TraverseAST::extractTokensFromFunctionCall(const NodeFunctionCall& functionCall) {
+    std::vector<token> t;
+    bool loop = false;
+    if (!functionCall.lhs.has_value()) return t;
+    const auto& actualParameters = *functionCall.lhs.value();
+    if (!actualParameters.rhs.empty()) loop = true;
+    const NodeExpression& expr = *actualParameters.lhs;
+    const NodeRelopExpression& relopExpr = *expr.lhs;
+    const NodeSimpleExpression& simpleExpr = *relopExpr.lhs;
+    const NodeTerm& term = *simpleExpr.lhs;
+    const NodePrimary& primary = *term.lhs;
+
+    if (std::holds_alternative<token>(primary.val)) t.emplace_back(std::get<token>(primary.val));
+
+    return t;
+}
+
+//bool TraverseAST::isFunctionDeclared(NodeFunctionCall& functionCall) {
+//    if (!functionCall.lhs.has_value()) return false;
+//
+//	//descending to the primary
+//    const auto& actualParameters = *functionCall.lhs.value();
+//    const NodeExpression& expr = *actualParameters.lhs;
+//    const NodeRelopExpression& relopExpr = *expr.lhs;
+//    const NodeSimpleExpression& simpleExpr = *relopExpr.lhs;
+//    const NodeTerm& term = *simpleExpr.lhs;
+//    const NodePrimary& primary = *term.lhs;
+//
+//    if(std::holds_alternative<token>(primary.val)) {
+//        const token& t = std::get<token>(primary.val);
+//        if (t.type == Tokens::ID) return _table.checkForSymbol(t.value);
+//    }
+//
+//    //const NodePrimary primary = functionCall.lhs.value()->lhs->lhs->lhs->lhs->lhs->val;
+//    //if(std::holds_alternative<token>(primary.val))
+//    //get identifier info
 //}
 
 
+
 void TraverseAST::reportError(const std::string& message) {
-    hasError = true;
+    //hasError = true;
 	Logger::error(message);
 }

@@ -4,6 +4,7 @@
 
 Logger::Level Logger::logLevel = Logger::Level::Default;
 bool Logger::hasError = false;
+bool Logger::demo = false;
 
 void Logger::setLogLevel(const Level level) {
 	logLevel = level;
@@ -61,7 +62,7 @@ void Logger::warning(const std::string& message) {
 
 void Logger::error(const std::string& message) {
 	std::cout << "[ERROR] " << message << "\n";
-	hasError = true;
+	if(!demo) hasError = true;
 }
 
 void Logger::parserError(const std::string& message, const int lc, const std::vector<token> t, const int spaces) {
@@ -75,6 +76,18 @@ void Logger::parserError(const std::string& message, const int lc, const std::ve
 		for (int i = 0; i < spaces; ++i) std::cout << " ";
 		std::cout << "^ " << message << "\n";
 		hasError = true;
+	}
+}
+
+void Logger::symbolTable(const std::string& message) {
+	if (logLevel <= Level::Debug || logLevel <= Level::Verbose || demo) {
+		std::cout << "[SYMBOL TABLE] Inserting " << message << "\n";
+	}
+}
+
+void Logger::symbolTableWarning(const std::string& message) {
+	if (logLevel <= Level::Debug || logLevel <= Level::Verbose || demo) {
+		std::cout << "[WARNING] Failed to insert " << message << "\n";
 	}
 }
 
