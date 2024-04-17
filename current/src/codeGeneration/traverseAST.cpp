@@ -59,17 +59,24 @@ void TraverseAST::analyzeFunctionBody(const NodeFunctionBody& fBody) {
 void TraverseAST::analyzeFormalParamList(const NodeFormalParamList& formalParamList) {
     if (hasError) return;
     Logger::semanticAnalyzer("formal parameters ");
+    const std::string functionID = _table.getLastSymbol();
+    const auto actualSymbol = _table.retrieveSymbol(functionID);
+    std::vector<token> parameters;
+    parameters.push_back(formalParamList.lhs->type);
+
     if(!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type)) {
         reportError(formalParamList.lhs->id.value + " already declared within the scope");
     }
     for (auto& param : formalParamList.rhs) {
-        if (param) {
+        if (param && param != nullptr) {
+            parameters.push_back(param->type);
             if (!_table.insertSymbol(param->id.value, param->type)) {
                 reportError(param->id.value + "already declared within the scope");
             }
         }
         else Logger::semanticAnalyzer("NULLPTR in formalparamlist");
     }
+    if (actualSymbol != nullptr ) actualSymbol->parameters = parameters;
 }
 
 void TraverseAST::analyzeStatement(NodeStatement& statement) {
@@ -208,12 +215,14 @@ void TraverseAST::analyzeTerm(NodeTerm& term) {
 
 void TraverseAST::analyzePrimary(NodePrimary& primary) {
     if (hasError) return;
+    std::string lastUsedID;
     std::visit(overloaded{
-        [this](const token& t) {
+        [this, &lastUsedID](token &t) {
             if (t.type == Tokens::ID) {
                 if (!_table.checkForSymbol(t.value)) {
                     reportError("Identifier (" + t.value + ") must be declared before being referenced");
                 }
+                lastUsedID = t.value;
             }
         },
         [this](const std::unique_ptr<NodeExpression>& expr) {
@@ -228,18 +237,51 @@ void TraverseAST::analyzePrimary(NodePrimary& primary) {
 
     if (primary.rhs) {
         Logger::semanticAnalyzer("function call:");
-        analyzeFunctionCall(*primary.rhs.value());
+        
+        analyzeFunctionCall(lastUsedID, *primary.rhs.value());
     }
 }
 
-void TraverseAST::analyzeFunctionCall(NodeFunctionCall& functionCall) {
-    if (hasError) return;
+void TraverseAST::analyzeFunctionCall(const std::string& call, const NodeFunctionCall& args) {
+    if (hasError || call.empty()) return;
     Logger::semanticAnalyzer("function call");
-    const std::vector<token> call = extractTokensFromFunctionCall(functionCall);
+    std::vector<token> arguments;
+    std::vector<token> declared;
+    const auto functionDef = _table.retrieveSymbol(call);
+    if(functionDef->parameters.has_value()) declared = functionDef->parameters.value();
+
+	extractTypesFromFunctionCall(args, arguments);
+    const int argumentSize = arguments.size();
+    const int declareSize = declared.size();
+
+	if (arguments.empty() && declared.empty()) return;
+    if (declared.empty() && !arguments.empty()) {
+        reportError("Function " + call + " expects no arguments, but received " + std::to_string(argumentSize));
+        return;
+    }
+
+    if (functionDef->parameters.has_value() && arguments.empty()) {
+        reportError("Function " + call + " expects arguments, but received none");
+        return;
+    }
+
+    if (declareSize != argumentSize) {
+        reportError("Expected " + std::to_string(declareSize) + " arguments, got "
+            + std::to_string(argumentSize) + " in function " + call);
+        return;
+    }
     
-   // std::cout << "\n" <<call.value << "\n";
-    if (functionCall.lhs.has_value()) {
-        analyzeActualParameters(*functionCall.lhs.value());
+    for(int i = 0; i < declareSize; ++i) {
+	    if (declared[i].type != arguments[i].type) {
+            reportError("Type mismatch for argument " + std::to_string(i + 1) + " in function '" + call +
+                "': Expected type " + declared[i].typeString +
+                ", got type " + arguments[i].typeString);
+            return;
+	    }
+    }
+
+    if (args.lhs.has_value()) {
+        analyzeActualParameters(*args.lhs.value());
     }
 }
 
@@ -252,44 +294,72 @@ void TraverseAST::analyzeActualParameters(NodeActualParameters& params) {
     }
 }
 
-std::vector<token> TraverseAST::extractTokensFromFunctionCall(const NodeFunctionCall& functionCall) {
-    std::vector<token> t;
-    bool loop = false;
-    if (!functionCall.lhs.has_value()) return t;
-    const auto& actualParameters = *functionCall.lhs.value();
-    if (!actualParameters.rhs.empty()) loop = true;
-    const NodeExpression& expr = *actualParameters.lhs;
-    const NodeRelopExpression& relopExpr = *expr.lhs;
-    const NodeSimpleExpression& simpleExpr = *relopExpr.lhs;
-    const NodeTerm& term = *simpleExpr.lhs;
-    const NodePrimary& primary = *term.lhs;
-
-    if (std::holds_alternative<token>(primary.val)) t.emplace_back(std::get<token>(primary.val));
-
-    return t;
+void TraverseAST::extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types) {
+    if (functionCall.lhs) {
+        extractTypesFromActualParameters(*functionCall.lhs.value(), types);
+    }
 }
 
-//bool TraverseAST::isFunctionDeclared(NodeFunctionCall& functionCall) {
-//    if (!functionCall.lhs.has_value()) return false;
-//
-//	//descending to the primary
-//    const auto& actualParameters = *functionCall.lhs.value();
-//    const NodeExpression& expr = *actualParameters.lhs;
-//    const NodeRelopExpression& relopExpr = *expr.lhs;
-//    const NodeSimpleExpression& simpleExpr = *relopExpr.lhs;
-//    const NodeTerm& term = *simpleExpr.lhs;
-//    const NodePrimary& primary = *term.lhs;
-//
-//    if(std::holds_alternative<token>(primary.val)) {
-//        const token& t = std::get<token>(primary.val);
-//        if (t.type == Tokens::ID) return _table.checkForSymbol(t.value);
-//    }
-//
-//    //const NodePrimary primary = functionCall.lhs.value()->lhs->lhs->lhs->lhs->lhs->val;
-//    //if(std::holds_alternative<token>(primary.val))
-//    //get identifier info
-//}
+// Extract types from actual parameters recursively
+void TraverseAST::extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types) {
+    extractTypesFromExpression(*params.lhs, types);
+    for (const auto& expr : params.rhs) {
+        extractTypesFromExpression(*expr, types);
+    }
+}
 
+// Continue with expressions
+void TraverseAST::extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types) {
+    extractTypesFromRelopExpression(*expr.lhs, types);
+    for (const auto& [op, subExpr] : expr.rhs) {
+        extractTypesFromRelopExpression(*subExpr, types);
+    }
+}
+
+// Process relational operator expressions
+void TraverseAST::extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types) {
+    extractTypesFromSimpleExpression(*relopExpr.lhs, types);
+    for (const auto& [relop, subExpr] : relopExpr.rhs) {
+        extractTypesFromSimpleExpression(*subExpr, types);
+    }
+}
+
+// Process simple expressions
+void TraverseAST::extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types) {
+    extractTypesFromTerm(*simpleExpr.lhs, types);
+    for (const auto& [addop, term] : simpleExpr.rhs) {
+        extractTypesFromTerm(*term, types);
+    }
+}
+
+// Process terms
+void TraverseAST::extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types) {
+    extractTypesFromPrimary(*term.lhs, types);
+    for (const auto& [mulop, primary] : term.rhs) {
+        extractTypesFromPrimary(*primary, types);
+    }
+}
+
+void TraverseAST::extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types) {
+    std::visit(overloaded{
+        [&](const token& t) {
+           auto const s =  _table.retrieveSymbol(t.value);
+            if (s != nullptr) types.push_back(s->type);
+            else reportError("Identifier (" + t.value + ") must be declared before being referenced");
+        },
+        [&](const std::unique_ptr<NodeExpression>& expr) {
+            extractTypesFromExpression(*expr, types);
+        },
+        [&](const std::pair<token, std::unique_ptr<NodePrimary>>& p) {
+            extractTypesFromPrimary(*p.second, types);
+        }
+        }, primary.val);
+
+    if (primary.rhs) {
+        // Pseudocode: You'd need to do a symbol table lookup here to get the function return type.
+        // Example: types.push_back(_table.getFunctionReturnType(primary.rhs.value()->...));
+    }
+}
 
 
 void TraverseAST::reportError(const std::string& message) {

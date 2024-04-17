@@ -37,12 +37,21 @@ private:
 	void analyzeSimpleExpression(NodeSimpleExpression& simpleExpression);
 	void analyzeTerm(NodeTerm& term);
 	void analyzePrimary(NodePrimary& primary);
-	void analyzeFunctionCall(NodeFunctionCall& functionCall);
+	void analyzeFunctionCall(const std::string& call, const NodeFunctionCall& args);
 	void analyzeActualParameters(NodeActualParameters& params);
 
 	/* Helpers */
 	std::vector<token> extractTokensFromFunctionCall(const NodeFunctionCall& functionCall);
 	//bool isFunctionDeclared(NodeFunctionCall& functionCall);
+
+	/* Helpers that returns all the primitive data types */
+	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types);
+	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types);
+	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types);
+	void extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types);
+	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types);
+	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types);
+	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types);
 
 	void reportError(const std::string& message);
 

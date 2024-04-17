@@ -131,7 +131,6 @@ std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
 		if (peekSafe().type == Tokens::ID) {
 			token id = parseIdentifier();
 			if (auto declaration = std::make_unique<NodeDeclaration>(type, id)) {
-				//_table.insertSymbol(id.value, type, scope);
 				formal = std::make_unique<NodeFormalParamList>(std::move(declaration));
 			}
 		}
@@ -523,6 +522,7 @@ std::unique_ptr<NodeFunctionCall> Parser::parseFunctionCall() {
 
 	if (peekSafe().type != Tokens::lparen) reportError("'('");
 	checkAndEatToken(Tokens::lparen);
+	if (checkAndEatToken(Tokens::rparen)) return std::make_unique<NodeFunctionCall>();
 
 	if (peekSafe().type != Tokens::rparen) {
 		auto param = parseActualParameters();

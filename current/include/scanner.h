@@ -21,6 +21,7 @@ private:
     int repeat = 0;
     void checkWhiteSpace();
     bool checkComments();
+    void checkSingleLineComment();
     std::optional<char> peek(int offset = 0) const;
     token createToken(Tokens tokenType, int line, const std::string& buffer, const std::string& value, bool isKeyword);
     char eat();

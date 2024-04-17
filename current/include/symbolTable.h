@@ -14,18 +14,23 @@ public:
     std::string id;
     token type;
     int scopeLevel;
+    std::optional<std::vector<token>> parameters;
 
     explicit Symbol(std::string id, token type, int scopeLevel)
         : id(std::move(id)), type(std::move(type)), scopeLevel(scopeLevel) {}
+
+	bool isFunction() const { return parameters.has_value(); }
 };
 
 class SymbolTable {
 public:
     void enterScope() { _scope++; }
     void exitScope() { _scope--;  }
-	bool insertSymbol(std::string id, const token& type, int scope = 0);
+   // bool insertSymbol(const std::string& id, const token& type, int scope = 0);
+    bool insertSymbol(const std::string& id, const token& type, int scope = 0, const std::vector<token>& params = {});
     bool checkForSymbol(const std::string& id);
     Symbol* retrieveSymbol(const std::string& id);
+    std::string getLastSymbol();
     void dumpTable();
     int _scope = 0;
 

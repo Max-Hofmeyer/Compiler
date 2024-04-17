@@ -90,6 +90,7 @@ token Scanner::getNextToken(bool display) {
 
 			return createToken(Tokens::number, line, "NUMBER", buffer, false);
 		}
+
 		//strings
 		if (peek().value() == '\"') {
 			buffer.push_back(eat());
@@ -101,6 +102,7 @@ token Scanner::getNextToken(bool display) {
 
 			return reportError("Illegal string at line: " + std::to_string(line));
 		}
+
 		//characters
 		if (peek().value() == '\'') {
 			buffer.push_back(eat());
@@ -225,6 +227,7 @@ token Scanner::getNextToken(bool display) {
 		}
 		//MULOP (/)
 		else if (peek().value() == '/') {
+			checkSingleLineComment();
 			eat();
 			return createToken(Tokens::mulop, line, "MULOP", "/", false);
 		}
@@ -257,18 +260,16 @@ token Scanner::getNextToken(bool display) {
 			return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
 		}
 	}
-	return createToken(Tokens::eof, line, "EOF", "EOF", false);
-	//return 
+
+	//at this point its either EOF, or a comment
+	if (!peek().has_value()) return createToken(Tokens::eof, line, "EOF", "EOF", false);
+	return getNextToken();
 }
 
 void Scanner::checkWhiteSpace() {
 	if (peek().has_value()) {
-		//space
-		while (peek().has_value() && std::isspace(peek().value()) && peek().value() != '\n') {
-			eat();
-		}
-		while(peek().has_value() && peek().value() == '\n') {
-			line++;
+		while (peek().has_value() && std::isspace(peek().value())) {
+			if (peek().value() == '\n') line++;
 			eat();
 		}
 	}
@@ -276,6 +277,7 @@ void Scanner::checkWhiteSpace() {
 
 bool Scanner::checkComments() {
 	if (peek().has_value()) {
+		checkSingleLineComment();
 		if (peek().value() == '/' && peek(1).has_value() && peek(1).value() == '*') {
 			eat();
 			eat();
@@ -301,6 +303,12 @@ bool Scanner::checkComments() {
 	}
 	else return true;
 	return false;
+}
+
+void Scanner::checkSingleLineComment() {
+	if (peek().has_value() && peek(1).has_value() && peek().value() && peek().value() == '/' && peek(1).value() == '/') {
+		while (peek().has_value() && peek().value() != '\n') eat();
+	}
 }
 
 //looks at a character from the source string, default offset is 0
