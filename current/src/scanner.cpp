@@ -306,7 +306,7 @@ bool Scanner::checkComments() {
 }
 
 void Scanner::checkSingleLineComment() {
-	if (peek().has_value() && peek(1).has_value() && peek().value() && peek().value() == '/' && peek(1).value() == '/') {
+	if (peek().has_value() && peek(1).has_value() && peek().value() == '/' && peek(1).value() == '/') {
 		while (peek().has_value() && peek().value() != '\n') eat();
 	}
 }

@@ -25,12 +25,19 @@ public:
 class SymbolTable {
 public:
     void enterScope() { _scope++; }
-    void exitScope() { _scope--;  }
+    void exitScope() { _scope--; }
+    //void exitScope();
    // bool insertSymbol(const std::string& id, const token& type, int scope = 0);
     bool insertSymbol(const std::string& id, const token& type, int scope = 0, const std::vector<token>& params = {});
     bool checkForSymbol(const std::string& id);
-    Symbol* retrieveSymbol(const std::string& id);
+
+    //returns a pointer to the symbol from the table if found, null if not found
+    Symbol* lookupSymbol(const std::string& id);
+
+    //returns the ID of the most recent emplacement on the historical table
     std::string getLastSymbol();
+    std::string getFirstSymbol();
+
     void dumpTable();
     int _scope = 0;
 

@@ -26,23 +26,31 @@ bool SymbolTable::insertSymbol(const std::string& id, const token& type, int sco
 }
 
 bool SymbolTable::checkForSymbol(const std::string& id) {
-	if (retrieveSymbol(id) == nullptr) return false;
+	if (lookupSymbol(id) == nullptr) return false;
 	return true;
 }
 
-//returns a pointer to the symbol from the table if found, null if not found
-Symbol* SymbolTable::retrieveSymbol(const std::string& id) {
+Symbol* SymbolTable::lookupSymbol(const std::string& id) {
 	auto s = _table.find(id);
 	if (s != _table.end() && !s->second.empty()) return &s->second.top();
 	return nullptr;
 }
 
-//returns the ID of the most recent emplacement on the historical table
 std::string SymbolTable::getLastSymbol() {
 	if (_historicalTable.empty()) return {};
 	return _historicalTable.back().second.id;
 }
 
+std::string SymbolTable::getFirstSymbol() {
+	if (_historicalTable.empty()) return {};
+
+	for (auto it = _historicalTable.rbegin(); it != _historicalTable.rend(); ++it) {
+		if (it->second.scopeLevel == 0) {
+			return it->second.id;
+		}
+	}
+	return {};
+}
 
 void SymbolTable::dumpTable() {
 	std::cout << "\n<< Symbol Table >> \n";

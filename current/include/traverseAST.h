@@ -3,6 +3,8 @@
 
 #include "ast.hpp"
 #include "symbolTable.h"
+#include <algorithm>
+#include <ranges>
 
 class TraverseAST {
 public:
@@ -27,7 +29,7 @@ private:
 	void analyzeCompoundStatement(const NodeCompoundStatement& compoundStatement);
 	void analyzeIfStatement(NodeIfStatement& ifStatement);
 	void analyzeNullStatement(NodeNullStatement& nullStatement);
-	void analyzeReturnStatement(NodeReturnStatement& returnStatement);
+	void analyzeReturnStatement(const NodeReturnStatement& returnStatement);
 	void analyzeWhileStatement(NodeWhileStatement& whileStatement);
 	void analyzeReadStatement(NodeReadStatement& readStatement);
 	void analyzeWriteStatement(NodeWriteStatement& writeStatement);
@@ -45,14 +47,14 @@ private:
 	//bool isFunctionDeclared(NodeFunctionCall& functionCall);
 
 	/* Helpers that returns all the primitive data types */
-	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types);
-	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types);
-	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types);
-	void extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types);
-	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types);
-	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types);
-	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types);
-
+	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types, bool getID = false);
+	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types, bool getID = false);
+	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types, bool getID = false);
+	void extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types, bool getID = false);
+	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types, bool getID = false);
+	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, bool getID = false);
+	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types, bool getID = false);
+	token convertDataToType(const token& t);
 	void reportError(const std::string& message);
 
 	SymbolTable& _table;

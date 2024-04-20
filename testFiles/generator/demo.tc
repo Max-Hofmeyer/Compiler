@@ -1,6 +1,5 @@
 int isEven(int n, int m){
-//	l = 3;
-	if ((n / 2) == 0)
+	if ((-n / 2) == 0)
 	return 1;
 	else
 	return 0;
@@ -9,22 +8,20 @@ int isEven(int n, int m){
 int main() {
 	int i;
 	int b;
-	int i;
 	char d;
-	i = 'c';
-	b = 2/0;
+	d = -d;
+	i = b;
 	while (i <= 10) {
 		int x;
 		int i;
-		i = isEven();
 		x = i + 2;
 		while (i <= 20) {
 			int y;
 			y = i+1;
 		}
 		isEven(i,y);
-		isEven(i,y,d);
-		i = isEven(i,d);
+		isEven(y,i);
+		i = isEven(i,y);
 		//isEven( );
 		write(i);
 		if ( isEven(i,y) )
