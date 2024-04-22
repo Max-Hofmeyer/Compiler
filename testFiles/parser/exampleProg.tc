@@ -1,6 +1,5 @@
 int isEven(int n){
-l = 5;
-	if ((n / 2) == 0)
+	if ((n % 2) == 0)
 	return 1;
 	else
 	return 0;
@@ -8,6 +7,11 @@ l = 5;
 
 int main() {
 	int i;
+	char d;
+	char b;
+	b = d;
+	if (d <= b)
+	write("d");
 	i = 1;
 	while (i <= 10) {
 		write(i);

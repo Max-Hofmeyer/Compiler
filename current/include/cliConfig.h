@@ -15,6 +15,7 @@ public:
     static int debugLevel;
     static bool verboseEnabled, hasError, dumpAST, dumpST, dumpCode, demo, customClass, customOutput;
     static std::string filePath, fileContents, fileName, className, outputName;
+    static std::filesystem::path jasminFileLocation;
 
 private:
     static void OutputHelp();

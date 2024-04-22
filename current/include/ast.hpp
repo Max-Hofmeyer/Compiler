@@ -196,7 +196,9 @@ public:
 	explicit NodeIfStatement(std::unique_ptr<NodeExpression> expr,
 		std::unique_ptr<NodeStatement> state) :
 		lhs(std::move(expr)),
-		rhs(std::move(state)) {}
+		rhs(std::move(state)) {
+		rhs = nullptr;
+	}
 
 	NodeIfStatement(std::unique_ptr<NodeExpression> expr,
 		std::unique_ptr<NodeStatement> state,

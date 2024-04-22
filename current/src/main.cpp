@@ -4,7 +4,8 @@
 #include "logger.h"
 #include "scanner.h"
 #include "parser.h"
-#include "traverseAST.h"
+#include "semanticAnalysis.h"
+#include "jasminGenerator.h"
 
 void assignLogLevel() {
 	if (CliConfig::demo) Logger::demo = true;
@@ -18,26 +19,32 @@ void assignLogLevel() {
 int main(int argc, char** argv) {
 	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 03/27/2024" << "\n";
 
-	//setup
+	/* setup */
 	CliConfig::ParseCli(argc, argv);
 	if (CliConfig::hasError) return EXIT_FAILURE;
 	assignLogLevel();
 	if (!CliConfig::LoadFile()) return EXIT_FAILURE;
 
-	//part 1
+	/* part 1 */
 	Scanner scanner(std::move(CliConfig::fileContents));
 
-	//part 2
+	/* part 2 */
 	Parser parser(scanner);
 	auto program = parser.begin();
-
-	if (program == nullptr) return EXIT_FAILURE;
+	if (program == nullptr || parser.hasError) return EXIT_FAILURE;
 	if (CliConfig::dumpAST || CliConfig::demo) program->print(std::cout);
 
-	//part 3
+	/* part 3 */
 	SymbolTable table;
-	TraverseAST ast(table, program);
+	AnalyseSemantics checkAST(table, program);
 
-	ast.analyzeSemantics();
-	if(!ast.hasError && (CliConfig::dumpST || CliConfig::demo)) table.dumpTable();
+	//check semantics
+	checkAST.traverseTree();
+	if (checkAST.hasError) return EXIT_FAILURE;
+	if (CliConfig::dumpST || CliConfig::demo) table.dumpTable();
+
+	//generate jasmin code
+	GenerateJasminCode outputAST(table, program);
+	outputAST.generateCode();
+	return EXIT_SUCCESS;
 }

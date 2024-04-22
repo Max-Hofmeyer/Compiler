@@ -10,7 +10,6 @@ int main() {
 	int b;
 	char d;
 	d = -d;
-	i = b;
 	while (i <= 10) {
 		int x;
 		int i;

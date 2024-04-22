@@ -6,14 +6,12 @@
 #include <algorithm>
 #include <ranges>
 
-class TraverseAST {
+class AnalyseSemantics {
 public:
-	explicit TraverseAST(SymbolTable& table, std::unique_ptr<NodeToyCProgram>& program) :
+	explicit AnalyseSemantics(SymbolTable& table, std::unique_ptr<NodeToyCProgram>& program) :
 	_table(table), _program(program) {}
 
-	void analyzeSemantics();
-	//void generateCode();
-
+	void traverseTree();
 	bool hasError = false;
 	
 private:
@@ -42,11 +40,7 @@ private:
 	void analyzeFunctionCall(const std::string& call, const NodeFunctionCall& args);
 	void analyzeActualParameters(NodeActualParameters& params);
 
-	/* Helpers */
-	std::vector<token> extractTokensFromFunctionCall(const NodeFunctionCall& functionCall);
-	//bool isFunctionDeclared(NodeFunctionCall& functionCall);
-
-	/* Helpers that returns all the primitive data types */
+	/* Helpers that get all the primitive data types */
 	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types, bool getID = false);
 	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types, bool getID = false);
 	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types, bool getID = false);
@@ -55,8 +49,10 @@ private:
 	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, bool getID = false);
 	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types, bool getID = false);
 	token convertDataToType(const token& t);
+
 	void reportError(const std::string& message);
 
+	/* Class variables */
 	SymbolTable& _table;
 	std::unique_ptr<NodeToyCProgram>& _program;
 };

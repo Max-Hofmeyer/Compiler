@@ -136,7 +136,7 @@ void NodeIfStatement::print(std::ostream& out) const {
         mhs->print(out);
         out << ",\n";
     }
-    if (rhs) {
+    if (rhs != nullptr) {
         rhs.value()->print(out);
         out << "\n";
     }
@@ -262,12 +262,3 @@ void NodeActualParameters::print(std::ostream& out) const {
     }
     out << ")";
 }
-
-//void SymbolTable::print(std::ostream& out) {
-//    std::cout << "Symbol Table Contents:\n";
-//    for (const auto& pair : table) {
-//        const token& tok = pair.second;
-//        std::cout << "Name: " << pair.first << ", Type: " << tok.typeString
-//            << ", Line: " << tok.lineLoc << std::endl;
-//    }
-//}

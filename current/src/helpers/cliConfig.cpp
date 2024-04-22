@@ -18,6 +18,8 @@ std::string CliConfig::fileName;
 std::string CliConfig::className;
 std::string CliConfig::outputName;
 
+std::filesystem::path CliConfig::jasminFileLocation;
+
 void CliConfig::ParseCli(int count, char** arguments) {
 	for (int i = 1; i < count; ++i) {
 		std::string arg = arguments[i];
@@ -45,7 +47,7 @@ void CliConfig::ParseCli(int count, char** arguments) {
 		else if (arg == "-abstract") dumpAST = true;
 		else if (arg == "-symbol") dumpST = true;
 		else if (arg == "-code") dumpCode = true;
-		else if (arg == "-demo") demo = true;
+		else if (arg == "-demoMode") demo = true;
 		else CheckForFile(arg);
 	}
 	if (verboseEnabled) {
@@ -76,11 +78,16 @@ bool CliConfig::LoadFile() {
 
 void CliConfig::CheckForFile(const std::string& arg) {
 	const std::filesystem::path checkValid = arg;
+	const std::filesystem::path workingDir = std::filesystem::current_path().parent_path().parent_path().parent_path();
 	if (checkValid.extension() == ".tc") {
 		filePath = arg;
 		fileName = checkValid.filename().string();
 		if (!customClass) className = checkValid.stem().string();
-		if (!customOutput) outputName = checkValid.stem().string();
+		if (!customOutput) outputName = checkValid.stem().string() + ".j";
+		if (dumpCode) {
+			jasminFileLocation = workingDir / outputName;
+			std::ofstream(jasminFileLocation).close();
+		}
 	}
 	else {
 		Logger::error("Command line error - \'" + arg + "\' is an unrecognized command line option\n");
@@ -90,6 +97,7 @@ void CliConfig::CheckForFile(const std::string& arg) {
 
 void CliConfig::OutputHelp() {
 	std::cout
+		<< "\n<< Help Menu >>\n"
 		<< "Usage: ./part3 [options] toyc_source_file.tc\n"
 		<< "\nWhere options include:\n"
 		<< "  -help			Display this usage message\n"

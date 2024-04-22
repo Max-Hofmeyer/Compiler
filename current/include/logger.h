@@ -24,7 +24,6 @@ public:
     static void outputTokens(std::vector <token> t);
     static void parserEnter(const std::string& message);
     static void parserExit(const std::string& message);
-    static void codeGenerator(const std::string& message);
     static void debug(const std::string& message);
     static void warning(const std::string& message);
     static void error(const std::string& message);
@@ -32,6 +31,7 @@ public:
     static void symbolTable(const std::string& message);
     static void symbolTableWarning(const std::string& message);
     static void semanticAnalyzer(const std::string& message);
+    static void codeGenerator(const std::string& message);
 	static bool hasError;
     static bool demo;
 

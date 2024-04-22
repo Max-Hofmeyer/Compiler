@@ -10,6 +10,21 @@ void Logger::setLogLevel(const Level level) {
 	logLevel = level;
 }
 
+void Logger::debug(const std::string& message) {
+	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
+		std::cout << "[DEBUG] " << message << "\n";
+	}
+}
+
+void Logger::warning(const std::string& message) {
+	std::cout << "[WARNING] " << message << "\n";
+}
+
+void Logger::error(const std::string& message) {
+	std::cout << "[ERROR] " << message << "\n";
+	hasError = true;
+}
+
 void Logger::scanner(const std::string& message) {
 	if (logLevel == Level::Scanner || logLevel == Level::Verbose &&
 		!hasError) {
@@ -38,31 +53,9 @@ void Logger::parserExit(const std::string& message) {
 	}
 }
 
-void Logger::codeGenerator(const std::string& message) {
-	if (logLevel <= Level::CodeGenerator || logLevel <= Level::Verbose 
-		&& !hasError) {
-		std::cout << "[GENERATOR] " << message << "\n";
-	}
-}
-
 void Logger::outputTokens(const std::vector<token> t) {
 	for (const auto& x : t) std::cout << x.value << " ";
 	std::cout << "\n";
-}
-
-void Logger::debug(const std::string& message) {
-	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
-		std::cout << "[DEBUG] " << message << "\n";
-	}
-}
-
-void Logger::warning(const std::string& message) {
-	std::cout << "[WARNING] " << message << "\n";
-}
-
-void Logger::error(const std::string& message) {
-	std::cout << "[ERROR] " << message << "\n";
-	if(!demo) hasError = true;
 }
 
 void Logger::parserError(const std::string& message, const int lc, const std::vector<token> t, const int spaces) {
@@ -80,19 +73,25 @@ void Logger::parserError(const std::string& message, const int lc, const std::ve
 }
 
 void Logger::symbolTable(const std::string& message) {
-	if (logLevel <= Level::Debug || logLevel <= Level::Verbose || demo) {
+	if (logLevel <= Level::Verbose) {
 		std::cout << "[SYMBOL TABLE] Inserting " << message << "\n";
 	}
 }
 
 void Logger::symbolTableWarning(const std::string& message) {
-	if (logLevel <= Level::Debug || logLevel <= Level::Verbose || demo) {
+	if (logLevel <= Level::Verbose) {
 		std::cout << "[WARNING] Failed to insert " << message << "\n";
 	}
 }
 
 void Logger::semanticAnalyzer(const std::string& message) {
-	if (logLevel <= Level::Debug || logLevel <= Level::Verbose) {
+	if (logLevel <= Level::Verbose) {
 		std::cout << "[ANALYZER] Checking " << message << "\n";
+	}
+}
+
+void Logger::codeGenerator(const std::string& message) {
+	if (logLevel == Level::CodeGenerator || logLevel == Level::Verbose && !hasError) {
+		std::cout << "[GENERATOR] " << message << "\n";
 	}
 }

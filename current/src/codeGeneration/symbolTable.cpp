@@ -54,10 +54,11 @@ std::string SymbolTable::getFirstSymbol() {
 
 void SymbolTable::dumpTable() {
 	std::cout << "\n<< Symbol Table >> \n";
-	std::cout << "Identifier | Type | Scope\n";
+	std::cout << "Identifier  |  Type  |  Scope \n";
 	for (const auto& [id, s] : _historicalTable) {
-		std::cout << id << "\t" << s.type.typeString << "\t" << s.scopeLevel << "\n";
+		std::cout << id << "\t\t" << s.type.typeString << "\t" << s.scopeLevel << "\n";
 	}
+	std::cout << "\n";
 }
 
 

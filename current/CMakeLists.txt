@@ -14,7 +14,8 @@ add_executable(current
 	src/parser/parser.cpp
 	src/parser/ast.cpp
 	src/codeGeneration/symbolTable.cpp
-	src/codeGeneration/traverseAST.cpp)
+	src/codeGeneration/semanticAnalysis.cpp
+	src/codeGeneration/jasminGenerator.cpp)
 
 target_include_directories(current PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
