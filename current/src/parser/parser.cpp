@@ -215,7 +215,6 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 			token id = parseIdentifier();
 			if (peekSafe().type != Tokens::semicolon) reportError("';'");
 			auto d = std::make_unique<NodeDeclaration>(type, id);
-			//if (d) _table.insertSymbol(id.value, type, scope);
 
 			if (checkAndEatToken(Tokens::semicolon)) {
 				if (d) compound->addDeclaration(std::move(d));

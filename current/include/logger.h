@@ -32,6 +32,7 @@ public:
     static void symbolTableWarning(const std::string& message);
     static void semanticAnalyzer(const std::string& message);
     static void codeGenerator(const std::string& message);
+    static void codeGeneratorStream(const std::string& message);
 	static bool hasError;
     static bool demo;
 

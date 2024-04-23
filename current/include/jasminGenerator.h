@@ -29,7 +29,7 @@ private:
 	void generateExpressionStatement(NodeExpressionStatement& expressionStatement);
 	void generateBreakStatement(NodeBreakStatement& breakStatement);
 	void generateCompoundStatement(const NodeCompoundStatement& compoundStatement);
-	void generateIfStatement(NodeIfStatement& ifStatement);
+	void generateIfStatement(const NodeIfStatement& ifStatement);
 	void generateNullStatement(NodeNullStatement& nullStatement);
 	void generateReturnStatement(const NodeReturnStatement& returnStatement);
 	void generateWhileStatement(NodeWhileStatement& whileStatement);
@@ -41,7 +41,7 @@ private:
 	void generateSimpleExpression(NodeSimpleExpression& simpleExpression);
 	void generateTerm(NodeTerm& term);
 	void generatePrimary(NodePrimary& primary);
-	void generateFunctionCall(const NodeFunctionCall& args);
+	void generateFunctionCall(const std::string& call, const NodeFunctionCall& args);
 	void generateActualParameters(NodeActualParameters& params);
 
 	/* Helpers that get all the primitive data types */
@@ -52,13 +52,22 @@ private:
 	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types, bool getID = false);
 	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, bool getID = false);
 	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types, bool getID = false);
+	void extractOpsFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types);
 	token convertDataToType(const token& t);
+	token convertSymbolToToken(const Symbol& s);
+	
 
-	void out(const std::string& message) { os << message << "\n"; }
+	void out(const std::string& message) {
+		if (debugStmts) Logger::codeGeneratorStream(message);
+		os << "\t" << message << "\n";
+	}
 
 	/* Class variables */
 	SymbolTable& _table;
+	int _labelIndex = 0;
 	std::unique_ptr<NodeToyCProgram>& _program;
 	std::string _outputName;
+	std::string _lastUsedId;
 	std::ofstream os;
+	bool debugStmts = false;
 };

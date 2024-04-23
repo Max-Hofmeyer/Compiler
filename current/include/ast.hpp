@@ -196,8 +196,7 @@ public:
 	explicit NodeIfStatement(std::unique_ptr<NodeExpression> expr,
 		std::unique_ptr<NodeStatement> state) :
 		lhs(std::move(expr)),
-		rhs(std::move(state)) {
-		rhs = nullptr;
+		mhs(std::move(state)) {
 	}
 
 	NodeIfStatement(std::unique_ptr<NodeExpression> expr,
@@ -324,8 +323,8 @@ public:
 	explicit NodeTerm(std::unique_ptr<NodePrimary> lhsExpr)
 		: lhs(std::move(lhsExpr)) {}
 
-	void addRHS(token addop, std::unique_ptr<NodePrimary> expr) {
-		rhs.emplace_back(std::move(addop), std::move(expr));
+	void addRHS(token mulop, std::unique_ptr<NodePrimary> expr) {
+		rhs.emplace_back(std::move(mulop), std::move(expr));
 	}
 
 	void print(std::ostream& out) const override;

@@ -131,7 +131,7 @@ void AnalyseSemantics::analyzeIfStatement(NodeIfStatement& ifStatement) {
 	Logger::semanticAnalyzer("if statement");
 	_table.enterScope();
 	analyzeExpression(*ifStatement.lhs);
-	if (ifStatement.mhs != nullptr) analyzeStatement(*ifStatement.mhs);
+	analyzeStatement(*ifStatement.mhs);
 	if (ifStatement.rhs.has_value() && ifStatement.rhs != nullptr) {
 		analyzeStatement(*ifStatement.rhs.value());
 	}
@@ -176,7 +176,21 @@ void AnalyseSemantics::analyzeWhileStatement(NodeWhileStatement& whileStatement)
 void AnalyseSemantics::analyzeReadStatement(NodeReadStatement& readStatement) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("read statement");
+	if (!_table.checkForSymbol(readStatement.lhs.value)) {
+		std::cout << "\n\t";
+		readStatement.print(std::cout);
+		std::cout << "\n";
+		reportError( " ^ : Identifier '" + readStatement.lhs.value + "' was referenced before being declared");
+		return;
+	}
 	for (const auto& id : readStatement.rhs) {
+		if (!_table.checkForSymbol(id.value)) {
+			std::cout << "\n\t";
+			readStatement.print(std::cout);
+			std::cout << "\n";
+			reportError(" ^ : Identifier '" + id.value + "' was referenced before being declared");
+			return;
+		}
 		Logger::semanticAnalyzer("reading " + id.value);
 	}
 }

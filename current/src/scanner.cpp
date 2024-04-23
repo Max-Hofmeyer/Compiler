@@ -66,6 +66,7 @@ token Scanner::getNextToken(bool display) {
 
 			return createToken(Tokens::ID, line, "ID", buffer, true);
 		}
+
 		//numbers
 		while (std::isdigit(peek().value())) {
 			buffer.push_back(eat());
@@ -249,12 +250,10 @@ token Scanner::getNextToken(bool display) {
 			eat();
 			return createToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
 		}
-		else {
-			if (isspace(peek().value())) {
-				checkWhiteSpace();
-				return getNextToken();
-			}
-			auto illegalChar = std::string(1, peek().value());
+		//weirdest edge case....
+		if (peek().value() != '\t') {
+			//since nothing was registered, assumed illegal character
+			const auto illegalChar = std::string(1, peek().value());
 			Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
 			eat();
 			return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
@@ -268,7 +267,7 @@ token Scanner::getNextToken(bool display) {
 
 void Scanner::checkWhiteSpace() {
 	if (peek().has_value()) {
-		while (peek().has_value() && std::isspace(peek().value())) {
+		while (peek().has_value() && (std::isspace(peek().value()) || peek().value() == '\t')) {
 			if (peek().value() == '\n') line++;
 			eat();
 		}
@@ -308,6 +307,10 @@ bool Scanner::checkComments() {
 void Scanner::checkSingleLineComment() {
 	if (peek().has_value() && peek(1).has_value() && peek().value() == '/' && peek(1).value() == '/') {
 		while (peek().has_value() && peek().value() != '\n') eat();
+		if (peek().has_value() && peek().value() == '\n') {
+			eat();
+			line++;
+		}
 	}
 }
 

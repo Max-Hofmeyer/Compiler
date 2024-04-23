@@ -2,6 +2,8 @@
 
 #include "logger.h"
 
+#include <algorithm>
+
 Logger::Level Logger::logLevel = Logger::Level::Default;
 bool Logger::hasError = false;
 bool Logger::demo = false;
@@ -92,6 +94,12 @@ void Logger::semanticAnalyzer(const std::string& message) {
 
 void Logger::codeGenerator(const std::string& message) {
 	if (logLevel == Level::CodeGenerator || logLevel == Level::Verbose && !hasError) {
-		std::cout << "[GENERATOR] " << message << "\n";
+		std::cout << "[GENERATOR] Generating " << message << "\n";
+	}
+}
+
+void Logger::codeGeneratorStream(const std::string& message) {
+	if (logLevel == Level::CodeGenerator || logLevel == Level::Verbose && !hasError) {
+		std::cout << "[JASMIN STREAM] " << message << "\n";
 	}
 }

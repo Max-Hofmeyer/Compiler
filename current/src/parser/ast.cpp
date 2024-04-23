@@ -136,7 +136,7 @@ void NodeIfStatement::print(std::ostream& out) const {
         mhs->print(out);
         out << ",\n";
     }
-    if (rhs != nullptr) {
+    if (rhs.has_value() && rhs != nullptr) {
         rhs.value()->print(out);
         out << "\n";
     }

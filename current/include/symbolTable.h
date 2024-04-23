@@ -14,10 +14,12 @@ public:
     std::string id;
     token type;
     int scopeLevel;
+    int index = 0;
+    bool inUse = false;
     std::optional<std::vector<token>> parameters;
 
-    explicit Symbol(std::string id, token type, int scopeLevel)
-        : id(std::move(id)), type(std::move(type)), scopeLevel(scopeLevel) {}
+    explicit Symbol(std::string id, token type, int scopeLevel, int index)
+        : id(std::move(id)), type(std::move(type)), scopeLevel(scopeLevel), index(index) {}
 
 	bool isFunction() const { return parameters.has_value(); }
 };
@@ -40,6 +42,7 @@ public:
 
     void dumpTable();
     int _scope = 0;
+    int _index = 0;
 
 private:
     std::unordered_map<std::string, std::stack<Symbol>> _table;
