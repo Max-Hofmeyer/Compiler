@@ -2,6 +2,8 @@
 
 #include "symbolTable.h"
 
+#include <ranges>
+
 //void SymbolTable::exitScope() {
 //	for (auto& x : _table) {
 //		while (!x.second.empty() && x.second.top().scopeLevel == _scope) x.second.pop();
@@ -9,15 +11,15 @@
 //	_scope--;
 //}
 
-bool SymbolTable::insertSymbol(const std::string& id, const token& type, int scope, const std::vector<token>& params) {
+bool SymbolTable::insertSymbol(const std::string& id, const token& type, int scope, const std::vector<token>& params, bool isFunc) {
 	if (scope == 0) scope = _scope;
+	if (id == "main") _index = -1;
+	if (isFunc) _index = 0;
+
 	const auto it = _table.find(id);
 	if (it == _table.end() || it->second.top().scopeLevel != scope) {
-
-		Symbol s(id, type, scope, _index++);
-		if (!params.empty()) s.parameters = params;
-
 		Logger::symbolTable(type.value + " " + id + " in scope " + std::to_string(scope) + " at index " + std::to_string(_index));
+		Symbol s(id, type, scope, _index++);
 		_table[id].emplace(s);
 		_historicalTable.emplace_back(id, s);
 		return true;

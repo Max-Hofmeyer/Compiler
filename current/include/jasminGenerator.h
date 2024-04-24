@@ -62,6 +62,11 @@ private:
 		os << "\t" << message << "\n";
 	}
 
+	void rawOut(const std::string& message) {
+		if (debugStmts) Logger::codeGeneratorStream(message);
+		os << message;
+	}
+
 	/* Class variables */
 	SymbolTable& _table;
 	int _labelIndex = 0;
@@ -70,4 +75,6 @@ private:
 	std::string _lastUsedId;
 	std::ofstream os;
 	bool debugStmts = false;
+	bool inMain = false;
+	std::string funcCall;
 };

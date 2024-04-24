@@ -11,71 +11,38 @@
 	return
 .end method
 
+
 .method public static main([Ljava/lang/String;)V
-	.limit locals 7
-	.limit stack 8
+	.limit locals 5
+	.limit stack 5
 
-	irem
+	ldc 0 ; init x
+	istore 0
 
-	return
-	ldc 0 ; init i
-	istore 4
+	iload 0 ; x
+	ldc 1
+	istore 0 ; x
 
-	ldc 0 ; init y
-	istore 5
-
-	iload 4 ; i
-	ldc 5
-	ldc 10
+	iload 0 ; x
+	ldc 2
 	iadd
-	istore 4 ; i
+	ldc 3
+	iadd
+	ldc 4
+	iadd
+	istore 0 ; x
 
-	goto loopCheck0
 
-loop0:
 	getstatic java/lang/System.out Ljava/io/PrintStream;
-	ldc "hi mom"
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+	iload 0 ; x
+	invokestatic java/lang/String/valueOf(I)Ljava/lang/String;
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 
-	iload 4 ; i
-	ldc 1
-	isub
-	istore 4 ; i
-
-	goto loopCheck0
-
-loopCheck0:
-	iload 4 ; i
-	ldc 1
-	iload 4 ; i
-	if_icmpgt	ldc 5
-	if_icmpgt loop0
 	getstatic java/lang/System.out Ljava/io/PrintStream;
-	ldc "
-"
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-	getstatic java/lang/System.out Ljava/io/PrintStream;
-	ldc "input a value for y"
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-
-	goto loopCheck1
-
-loop1:
-	getstatic java/lang/System.out Ljava/io/PrintStream;
-	ldc "goodbye mom"
-	invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
-
-	iload 5 ; y
-	ldc 2
-	isub
-	istore 5 ; y
-
-	goto loopCheck1
-
-loopCheck1:
-	iload 5 ; y
-	ldc 2
-	if_icmpgt loop1
+	ldc "what?"
+	invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V
 
 	return
+
 .end method
+

@@ -12,11 +12,6 @@ struct overloaded : Ts... {
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-//todo list
-	// Finish read
-	// Finish || in term
-	// Function call
-
 void GenerateJasminCode::generateCode() {
 	if (_program == nullptr) return;
 	if (CliConfig::demo || CliConfig::verboseEnabled) debugStmts = true;
@@ -28,39 +23,57 @@ void GenerateJasminCode::generateCode() {
 	Logger::codeGeneratorStream("Writing to jasmin file: " + CliConfig::jasminFileLocation.string());
 
 	Logger::codeGenerator("Generating ToyCProgram");
-	os << "; File:     \t" << CliConfig::jasminFileLocation.string() << "\n"
+	os  << "; File:     \t" << CliConfig::jasminFileLocation.string() << "\n"
 		<< "; Author(s):\tMax Hofmeyer, Ahmed Malik, 19 April 2024\n"
 		<< "; -------------------------------------------------------------------------\n\n"
 		<< ".class public " + CliConfig::className + "\n"
 		<< ".super java/lang/Object\n\n"
 		<< ".method public <init>()V\n\taload_0\n\tinvokenonvirtual java/lang/Object/<init>()V\n\treturn\n"
-		<< ".end method\n\n"
-		<< ".method public static main([Ljava/lang/String;)V\n";
-	out(".limit locals " + std::to_string(_table._index + 1));
-	out(".limit stack " + std::to_string(_table._index + 2));
+		<< ".end method\n\n";
 	os << "\n";
 
 	for (auto& definition : _program->definitions) {
 		generateDefinition(*definition);
+		rawOut(".end method");
+		os << "\n\n";
 	}
-	os << ".end method\n";
 }
 
 
 void GenerateJasminCode::generateDefinition(const NodeDefinition& definition) {
 	Logger::codeGenerator("definition");
+	if (definition.lhs->id.value == "main") {
+		rawOut(".method public static main([Ljava/lang/String;)V\n");
+		inMain = true;
+	}
+	else {
+		auto s = _table.lookupSymbol(definition.lhs->id.value);
+		rawOut(".method public static " + definition.lhs->id.value + "(");
+		if (!s->parameters.has_value()) return;
+		for (auto params : s->parameters.value()) {
+			rawOut("I");
+		}
+		rawOut(")I\n");
+	}
+	out(".limit locals " + std::to_string(_table._index * 5));
+	out(".limit stack " + std::to_string(_table._index * 5));
+	os << "\n";
 	if (definition.rhs.has_value()) {
 		generateFunctionDefinition(*definition.rhs.value());
 	}
 }
 
-//todo: EC 
 void GenerateJasminCode::generateFunctionDefinition(const NodeFunctionDefinition& fDefinition) {
 	Logger::codeGenerator("function definition");
 	generateFunctionHeader(*fDefinition.lhs);
 	generateFunctionBody(*fDefinition.rhs);
 	os << "\n";
-	out("return");
+	if (inMain) {
+		out("return");
+		inMain = false;
+	}
+	else out("ireturn");
+	os << "\n";
 }
 
 void GenerateJasminCode::generateFunctionHeader(const NodeFunctionHeader& fHeader) {
@@ -77,6 +90,16 @@ void GenerateJasminCode::generateFunctionBody(const NodeFunctionBody& fBody) {
 }
 
 void GenerateJasminCode::generateFormalParamList(const NodeFormalParamList& formalParamList) {
+	auto* s = _table.lookupSymbol(formalParamList.lhs->id.value);
+	if (s == nullptr) return;
+
+	out("iload " + std::to_string(s->index) + " ; " + s->id);
+	for (auto& var : formalParamList.rhs) {
+		auto* sym = _table.lookupSymbol(var->id.value);
+		if (sym == nullptr) return;
+		out("iload " + std::to_string(sym->index) + " ; " + sym->id);
+	}
+	os << "\n";
 }
 
 void GenerateJasminCode::generateStatement(NodeStatement& statement) {
@@ -95,7 +118,7 @@ void GenerateJasminCode::generateStatement(NodeStatement& statement) {
 }
 
 void GenerateJasminCode::generateExpressionStatement(NodeExpressionStatement& expressionStatement) {
-	Logger::codeGenerator("expression statement");
+	
 	generateExpression(*expressionStatement.exp);
 }
 
@@ -113,7 +136,9 @@ void GenerateJasminCode::generateCompoundStatement(const NodeCompoundStatement& 
 		}
 	}
 
-	for (auto& statement : compoundStatement.rhs) generateStatement(*statement);
+	for (auto& statement : compoundStatement.rhs) {
+		generateStatement(*statement);
+	}
 }
 
 void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement) {
@@ -121,7 +146,10 @@ void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement)
 	const std::string label = std::to_string(_labelIndex++);
 	generateExpression(*ifStatement.lhs);
 	os << " Ltrue" << label << "\n";
-	out("goto Lfalse" + label);
+
+	if (ifStatement.rhs.has_value() && ifStatement.rhs != nullptr) {
+		out("goto Lfalse" + label);
+	}
 	os << "\n";
 
 	out("Ltrue" + label + ":");
@@ -137,7 +165,7 @@ void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement)
 }
 
 void GenerateJasminCode::generateNullStatement(NodeNullStatement& nullStatement) {
-	Logger::codeGenerator("null statement");
+	
 }
 
 void GenerateJasminCode::generateReturnStatement(const NodeReturnStatement& returnStatement) {
@@ -167,8 +195,8 @@ void GenerateJasminCode::generateReadStatement(NodeReadStatement& readStatement)
 	Logger::codeGenerator("read statement");
 	out("\n\tnew java/util/Scanner");
 	out("dup");
-	out("getstatic java/lang/System.in : Ljava/io/InputStream;");
-	out("invokespecial java/util/Scanner/<init> (Ljava/io/InputStream;)V");
+	out("getstatic java/lang/System/in Ljava/io/InputStream;");
+	out("invokespecial java/util/Scanner/<init>(Ljava/io/InputStream;)V");
 
 	int scannerIndex = _table._index++;
 	std::string scanner = "astore " + std::to_string(scannerIndex);
@@ -188,30 +216,32 @@ void GenerateJasminCode::generateReadStatement(NodeReadStatement& readStatement)
 	}
 }
 
-//todo
 void GenerateJasminCode::generateWriteStatement(NodeWriteStatement& writeStatement) {
 	if (!writeStatement.lhs || writeStatement.lhs == nullptr) return;
+	bool isNum = false;
 	Logger::codeGenerator("write statement");
+	os << "\n";
 	out("getstatic java/lang/System.out Ljava/io/PrintStream;");
 	std::vector<token> t;
-	extractTypesFromActualParameters(*writeStatement.lhs, t, true);
 
-	if (t[0].type == Tokens::_int) {
-		auto* s = _table.lookupSymbol(t[0].value);
-		out("iload " + std::to_string(s->index));
-		out("invokevirtual java/io/PrintStream.println (I)V\n");
-	}
-	else if (t[0].type == Tokens::string) {
-		out("ldc " + t[0].value);
-		out("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V\n");
+	extractTypesFromExpression(*writeStatement.lhs->lhs, t);
+	for (auto &exprRhs : writeStatement.lhs->rhs) {
+		extractTypesFromExpression(*exprRhs, t);
 	}
 
+	for (auto tok : t) {
+		if (tok.type != Tokens::string) isNum = true;
+	}
+	generateActualParameters(*writeStatement.lhs);
+	if (isNum) out("invokestatic java/lang/String/valueOf(I)Ljava/lang/String;");
+	out("invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V");
 }
 
 void GenerateJasminCode::generateNewLineStatement(NodeNewLineStatement& newLineStatement) {
 	Logger::codeGenerator("new line statement");
+	os << "\n";
 	out("getstatic java/lang/System.out Ljava/io/PrintStream;");
-	out("ldc \"\n\"");
+	out("ldc \"\n\t\"");
 	out("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V");
 }
 
@@ -238,15 +268,15 @@ void GenerateJasminCode::generateRelopExpression(NodeRelopExpression& relopExpre
 	Logger::codeGenerator("Relop Expression");
 	generateSimpleExpression(*relopExpression.lhs);
 	for (auto& rhsExpr : relopExpression.rhs | std::views::values) {
-		generateSimpleExpression(*rhsExpr);
 		token t = relopExpression.rhs.front().first;
+		generateSimpleExpression(*rhsExpr);
 		if (t.type != Tokens::relop) return;
-		if (t.value == "==") os <<"\tif_icmpeq";
-		if (t.value == "!=") os << "\tif_icmpne";
-		if (t.value == "<") os << "\tif_icmplt";
-		if (t.value == "<=") os << "\tif_icmple";
-		if (t.value == ">") os << "\tif_icmpgt";
-		if (t.value == ">=") os << "\tif_icmpge";
+		if (t.value == "==")  rawOut("\tif_icmpeq");
+		if (t.value == "!=") rawOut("\tif_icmpne");
+		if (t.value == "<") rawOut("\tif_icmplt");
+		if (t.value == "<=") rawOut("\tif_icmple");
+		if (t.value == ">") rawOut("\tif_icmpgt");
+		if (t.value == ">=") rawOut("\tif_icmpge");
 	}
 }
 
@@ -261,20 +291,7 @@ void GenerateJasminCode::generateSimpleExpression(NodeSimpleExpression& simpleEx
 		if (t.value == "+") out("iadd");
 		if (t.value == "-") out("isub");
 		if (t.value == "||"){
-			//const std::string label = std::to_string(_labelIndex++);
-			//os << "\tifne ";
-			//generateTerm(*rhsTerm);
-			//os << "\tifne ";
-			//out("dup");
-			//out("ifne logic" + label);
-			//out("pop");
-			//generateTerm(*rhsTerm);
-			//out("ifne logic" + label);
-			//out("iconst_0");
-			//out("goto logic" + label + "end");
-			//out("logic" + label + ":");
-			//out("iconst_1");
-			//out("logic" + label + "end");
+			return;
 		}
 	}
 }
@@ -331,16 +348,24 @@ void GenerateJasminCode::generatePrimary(NodePrimary& primary) {
 	}
 }
 
-//todo
 void GenerateJasminCode::generateFunctionCall(const std::string& call, const NodeFunctionCall& args) {
 	Logger::codeGenerator("function call");
+	std::string funcCall = "invokestatic " + CliConfig::className + "/" + call + "(";
+
+	auto s = _table.lookupSymbol(call);
+	if (s->parameters.has_value()) {
+		for (auto arg : s->parameters.value()) {
+			funcCall.append("I");
+		}
+	}
+	funcCall.append(")I");
 
 	if (args.lhs.has_value()) {
 		generateActualParameters(*args.lhs.value());
 	}
+	out(funcCall);
 }
 
-//todo
 void GenerateJasminCode::generateActualParameters(NodeActualParameters& params) {
 	Logger::codeGenerator("actual parameters");
 	generateExpression(*params.lhs);
@@ -348,7 +373,6 @@ void GenerateJasminCode::generateActualParameters(NodeActualParameters& params) 
 		generateExpression(*param);
 	}
 }
-
 
 void GenerateJasminCode::extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types,
                                                       const bool getID) {

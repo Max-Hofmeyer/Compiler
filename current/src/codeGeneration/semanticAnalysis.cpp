@@ -65,7 +65,7 @@ void AnalyseSemantics::analyzeFormalParamList(const NodeFormalParamList& formalP
 	std::vector<token> parameters;
 	parameters.push_back(formalParamList.lhs->type);
 
-	if (!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type)) {
+	if (!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type, 0, {} , true)) {
 		reportError(std::to_string(formalParamList.lhs->id.lineLoc) + ": '" + formalParamList.lhs->id.value +
 			"' already declared within the scope");
 	}

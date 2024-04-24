@@ -75,19 +75,19 @@ void Logger::parserError(const std::string& message, const int lc, const std::ve
 }
 
 void Logger::symbolTable(const std::string& message) {
-	if (logLevel <= Level::Verbose) {
+	if (logLevel == Level::CodeGenerator && !hasError || logLevel <= Level::Verbose) {
 		std::cout << "[SYMBOL TABLE] Inserting " << message << "\n";
 	}
 }
 
 void Logger::symbolTableWarning(const std::string& message) {
-	if (logLevel <= Level::Verbose) {
+	if (logLevel == Level::CodeGenerator && !hasError || logLevel <= Level::Verbose) {
 		std::cout << "[WARNING] Failed to insert " << message << "\n";
 	}
 }
 
 void Logger::semanticAnalyzer(const std::string& message) {
-	if (logLevel <= Level::Verbose) {
+	if (logLevel == Level::CodeGenerator && !hasError || logLevel <= Level::Verbose) {
 		std::cout << "[ANALYZER] Checking " << message << "\n";
 	}
 }

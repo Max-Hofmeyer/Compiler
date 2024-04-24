@@ -1,21 +1,8 @@
-
-int isEven(int n, int m){
-	return (n % m);
-}
-
 int main() {
-	int i;
-	int y;
-	i = 5 + 10;
-	while(i > 1 || i < 5){
-		write("hi mom");
-		i = i - 1;
-	}
-	newline;
-	write("input a value for y");
-	while(y > 2){
-		write("goodbye mom");
-		y = y - 2;
-	}
+	int x;
+	x = 1;
+	x = x + 2 + 3 + 4;
+	write(x);
+	write("what?");
 	return;
 }
