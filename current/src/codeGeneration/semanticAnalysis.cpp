@@ -25,13 +25,21 @@ void AnalyseSemantics::traverseTree() {
 void AnalyseSemantics::analyzeDefinition(const NodeDefinition& definition) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("definition");
+	std::string temp = definition.lhs->id.value;
 	if (!_table.insertSymbol(definition.lhs->id.value, definition.lhs->type)) {
 		reportError(definition.lhs->id.value + " already declared within the scope");
 	}
 	++_table._scopeCount;
-	if (definition.rhs.has_value()) {
-		analyzeFunctionDefinition(*definition.rhs.value());
+	if (definition.rhs.has_value()) analyzeFunctionDefinition(*definition.rhs.value());
+
+	//if a function doesn't have a return, no node to traverse. so this is what you have to do..
+	if(!isReturn) {
+		auto *s = _table.lookupSymbol(temp);
+		if (s == nullptr) return;
+		reportError("No return provided for function '" + s->id + "' expected a return of type '" + s->type.typeString + "'");
 	}
+	isReturn = false;
+
 }
 
 void AnalyseSemantics::analyzeFunctionDefinition(const NodeFunctionDefinition& fDefinition) {
@@ -147,21 +155,24 @@ void AnalyseSemantics::analyzeNullStatement(NodeNullStatement& nullStatement) {
 void AnalyseSemantics::analyzeReturnStatement(const NodeReturnStatement& returnStatement) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("return statement");
-	if (!returnStatement.lhs.has_value()) return;
+	const auto func = _table.lookupSymbol(_table.getFirstSymbol());
+	if (!returnStatement.lhs.has_value()) {
+		reportError("No return provided for function '" + func->id + "' expected return of type '" + func->type.typeString + "'");
+		return;
+	}
 
 	std::vector<token> returnT;
-	const auto func = _table.lookupSymbol(_table.getFirstSymbol());
 	if (func == nullptr) return;
 
 	extractTypesFromExpression(*returnStatement.lhs.value(), returnT, false);
-	if (returnT.empty()) return;
+	if (returnT.empty()) reportError("No return provided for function '" + func->id + "' expected return of type '" + func->type.typeString + "'");
 	if (returnT[0].type != func->type.type) {
 		reportError("'" + returnT[0].value +
 			"' incorrect return type for function '"
 			+ func->id + "', expected type '" + func->type.typeString + "'");
 		return;
 	}
-
+	isReturn = true;
 	analyzeExpression(*returnStatement.lhs.value());
 }
 

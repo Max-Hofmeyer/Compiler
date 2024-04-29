@@ -55,4 +55,5 @@ private:
 	/* Class variables */
 	SymbolTable& _table;
 	std::unique_ptr<NodeToyCProgram>& _program;
+	bool isReturn = false;
 };

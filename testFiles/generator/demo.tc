@@ -5,38 +5,18 @@ int isEven(int n, int m){
 	return 0;
 }
 
+int hello() {
+	return 0;
+}
+
+int goodbye() {
+	write("hello");
+	return 0;
+}
+
 int main() {
 	int i;
-	int b;
-	char d;
-	d = -d;
-	while (i <= 10) {
-		int x;
-		int i;
-		x = i + 2;
-		while (i <= 20) {
-			int y;
-			y = i+1;
-		}
-		isEven(i,y);
-		isEven(y,i);
-		i = isEven(i,y);
-		//isEven( );
-		write(i);
-		if ( isEven(i,y) )
-		write(" is even");
-		else
-		write(" is odd");
-		newline;
-		i = i / 1;
-	}
-	return;
-}
+	i = goodbye();
 
-int hello() {
-	write("hi");
-}
-
-int goodbye(){
-	write("bye");
+	return i;
 }
