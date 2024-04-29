@@ -78,7 +78,7 @@ bool CliConfig::LoadFile() {
 
 void CliConfig::CheckForFile(const std::string& arg) {
 	const std::filesystem::path checkValid = arg;
-	const std::filesystem::path workingDir = std::filesystem::current_path().parent_path().parent_path().parent_path();
+	const std::filesystem::path workingDir = std::filesystem::current_path().parent_path().parent_path();
 	if (checkValid.extension() == ".tc") {
 		filePath = arg;
 		fileName = checkValid.filename().string();

@@ -33,10 +33,10 @@ int main() {
 	return;
 }
 
-char hello() {
+int hello() {
 	write("hi");
 }
 
-char goodbye(){
+int goodbye(){
 	write("bye");
 }

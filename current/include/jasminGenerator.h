@@ -14,7 +14,7 @@ public:
 	explicit GenerateJasminCode(SymbolTable& table, std::unique_ptr<NodeToyCProgram>& program) :
 		_table(table), _program(program) {
 	}
-	~GenerateJasminCode() { os.close(); }
+	~GenerateJasminCode() { if (CliConfig::dumpCode) os.close(); }
 
 	void generateCode();
 
@@ -27,6 +27,7 @@ private:
 	void generateFormalParamList(const NodeFormalParamList& formalParamList);
 	void generateStatement(NodeStatement& statement);
 	void generateExpressionStatement(NodeExpressionStatement& expressionStatement);
+	void generateComplexExpression(NodeExpression& expression);
 	void generateBreakStatement(NodeBreakStatement& breakStatement);
 	void generateCompoundStatement(const NodeCompoundStatement& compoundStatement);
 	void generateIfStatement(const NodeIfStatement& ifStatement);
@@ -45,18 +46,17 @@ private:
 	void generateActualParameters(NodeActualParameters& params);
 
 	/* Helpers that get all the primitive data types */
-	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types, bool getID = false);
-	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types, bool getID = false);
-	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types, bool getID = false);
-	void extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types, bool getID = false);
-	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types, bool getID = false);
-	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, bool getID = false);
-	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types, bool getID = false);
-	void extractOpsFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types);
+	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, bool getID = false, bool getAll = false);
+	void extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types, bool getID = false, bool getAll = false);
 	token convertDataToType(const token& t);
 	token convertSymbolToToken(const Symbol& s);
 	
-
+	/* File stream wrappers */
 	void out(const std::string& message) {
 		if (debugStmts) Logger::codeGeneratorStream(message);
 		os << "\t" << message << "\n";
@@ -69,12 +69,14 @@ private:
 
 	/* Class variables */
 	SymbolTable& _table;
-	int _labelIndex = 0;
 	std::unique_ptr<NodeToyCProgram>& _program;
+	std::ofstream os;
 	std::string _outputName;
 	std::string _lastUsedId;
-	std::ofstream os;
+	std::string orCatch;
+	std::string funcCall;
+	int _labelIndex = 0;
 	bool debugStmts = false;
 	bool inMain = false;
-	std::string funcCall;
+	bool isOR = false;
 };

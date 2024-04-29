@@ -13,15 +13,17 @@
 
 bool SymbolTable::insertSymbol(const std::string& id, const token& type, int scope, const std::vector<token>& params, bool isFunc) {
 	if (scope == 0) scope = _scope;
-	if (id == "main") _index = -1;
 	if (isFunc) _index = 0;
+	if (id == "main") _index = -1;
 
 	const auto it = _table.find(id);
+
 	if (it == _table.end() || it->second.top().scopeLevel != scope) {
 		Logger::symbolTable(type.value + " " + id + " in scope " + std::to_string(scope) + " at index " + std::to_string(_index));
 		Symbol s(id, type, scope, _index++);
 		_table[id].emplace(s);
 		_historicalTable.emplace_back(id, s);
+		_lastScope = _scope;
 		return true;
 	}
 	Logger::symbolTableWarning(type.value + " " + id + " in scope " + std::to_string(scope));

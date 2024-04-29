@@ -2,7 +2,6 @@
 
 #include "jasminGenerator.h"
 
-
 //needed for visit: https://en.cppreference.com/w/cpp/utility/variant/visit
 template <class... Ts>
 struct overloaded : Ts... {
@@ -13,7 +12,7 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 void GenerateJasminCode::generateCode() {
-	if (_program == nullptr) return;
+	if (_program == nullptr || !CliConfig::dumpCode) return;
 	if (CliConfig::demo || CliConfig::verboseEnabled) debugStmts = true;
 	os.open(CliConfig::jasminFileLocation);
 	if (!os.is_open()) {
@@ -23,7 +22,7 @@ void GenerateJasminCode::generateCode() {
 	Logger::codeGeneratorStream("Writing to jasmin file: " + CliConfig::jasminFileLocation.string());
 
 	Logger::codeGenerator("Generating ToyCProgram");
-	os  << "; File:     \t" << CliConfig::jasminFileLocation.string() << "\n"
+	os << "; File:     \t" << CliConfig::jasminFileLocation.string() << "\n"
 		<< "; Author(s):\tMax Hofmeyer, Ahmed Malik, 19 April 2024\n"
 		<< "; -------------------------------------------------------------------------\n\n"
 		<< ".class public " + CliConfig::className + "\n"
@@ -39,7 +38,6 @@ void GenerateJasminCode::generateCode() {
 	}
 }
 
-
 void GenerateJasminCode::generateDefinition(const NodeDefinition& definition) {
 	Logger::codeGenerator("definition");
 	if (definition.lhs->id.value == "main") {
@@ -49,9 +47,10 @@ void GenerateJasminCode::generateDefinition(const NodeDefinition& definition) {
 	else {
 		auto s = _table.lookupSymbol(definition.lhs->id.value);
 		rawOut(".method public static " + definition.lhs->id.value + "(");
-		if (!s->parameters.has_value()) return;
-		for (auto params : s->parameters.value()) {
-			rawOut("I");
+		if (s->parameters.has_value()) {
+			for (auto params : s->parameters.value()) {
+				rawOut("I");
+			}
 		}
 		rawOut(")I\n");
 	}
@@ -118,7 +117,6 @@ void GenerateJasminCode::generateStatement(NodeStatement& statement) {
 }
 
 void GenerateJasminCode::generateExpressionStatement(NodeExpressionStatement& expressionStatement) {
-	
 	generateExpression(*expressionStatement.exp);
 }
 
@@ -129,7 +127,7 @@ void GenerateJasminCode::generateCompoundStatement(const NodeCompoundStatement& 
 	Logger::codeGenerator("compound statement");
 	for (auto& declaration : compoundStatement.lhs) {
 		auto* s = _table.lookupSymbol(declaration->id.value);
-		if(!s->inUse) {
+		if (!s->inUse) {
 			out("ldc 0 ; init " + s->id);
 			out("istore " + std::to_string(s->index) + "\n");
 			s->inUse = true;
@@ -143,13 +141,21 @@ void GenerateJasminCode::generateCompoundStatement(const NodeCompoundStatement& 
 
 void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement) {
 	Logger::codeGenerator("if statement");
+
+	//if an expression has more than one conditional, special handling is needed
+	std::vector<token> toks;
+	extractTypesFromExpression(*ifStatement.lhs, toks, false, true);
 	const std::string label = std::to_string(_labelIndex++);
-	generateExpression(*ifStatement.lhs);
-	os << " Ltrue" << label << "\n";
+	if (toks.size() > 1) generateComplexExpression(*ifStatement.lhs);
+	else {
+		generateExpression(*ifStatement.lhs);
+		os << " Ltrue" << label << "\n";
+	}
 
 	if (ifStatement.rhs.has_value() && ifStatement.rhs != nullptr) {
 		out("goto Lfalse" + label);
 	}
+	else out("goto Lend" + label);
 	os << "\n";
 
 	out("Ltrue" + label + ":");
@@ -161,11 +167,9 @@ void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement)
 		generateStatement(*ifStatement.rhs.value());
 	}
 	out("Lend" + label + ":");
-
 }
 
 void GenerateJasminCode::generateNullStatement(NodeNullStatement& nullStatement) {
-	
 }
 
 void GenerateJasminCode::generateReturnStatement(const NodeReturnStatement& returnStatement) {
@@ -198,13 +202,13 @@ void GenerateJasminCode::generateReadStatement(NodeReadStatement& readStatement)
 	out("getstatic java/lang/System/in Ljava/io/InputStream;");
 	out("invokespecial java/util/Scanner/<init>(Ljava/io/InputStream;)V");
 
-	int scannerIndex = _table._index++;
-	std::string scanner = "astore " + std::to_string(scannerIndex);
-	std::string load = "aload " + std::to_string(scannerIndex);
+	const int scannerIndex = _table._index++;
+	const std::string scanner = "astore " + std::to_string(scannerIndex);
+	const std::string load = "aload " + std::to_string(scannerIndex);
 	out(scanner);
 
 	out(load);
-	auto* s = _table.lookupSymbol(readStatement.lhs.value);
+	const auto* s = _table.lookupSymbol(readStatement.lhs.value);
 	out("invokevirtual java/util/Scanner.nextInt()I");
 	out("istore " + std::to_string(s->index) + " ; " + s->id + "\n");
 
@@ -225,7 +229,7 @@ void GenerateJasminCode::generateWriteStatement(NodeWriteStatement& writeStateme
 	std::vector<token> t;
 
 	extractTypesFromExpression(*writeStatement.lhs->lhs, t);
-	for (auto &exprRhs : writeStatement.lhs->rhs) {
+	for (auto& exprRhs : writeStatement.lhs->rhs) {
 		extractTypesFromExpression(*exprRhs, t);
 	}
 
@@ -248,30 +252,52 @@ void GenerateJasminCode::generateNewLineStatement(NodeNewLineStatement& newLineS
 void GenerateJasminCode::generateExpression(NodeExpression& expression) {
 	Logger::codeGenerator("expression");
 	std::vector<token> id;
+	int pos = 0;
 	extractTypesFromRelopExpression(*expression.lhs, id, true);
-	generateRelopExpression(*expression.lhs);
+	for (auto& ids : expression.rhs) {
+		extractTypesFromRelopExpression(*ids.second, id, true);
+	}
 
-	for (const auto& rhsExpr : expression.rhs | std::views::values) {
-		generateRelopExpression(*rhsExpr);
-		auto* s = _table.lookupSymbol(id[0].value);
+	generateRelopExpression(*expression.lhs);
+	for (const auto& rhsExpr : expression.rhs) {
+		auto* s = _table.lookupSymbol(id[pos++].value);
+		generateRelopExpression(*rhsExpr.second);
 		out("istore " + std::to_string(s->index) + " ; " + s->id);
-		if (CliConfig::verboseEnabled) {
-			os << "\t\t; ^ ";
-			expression.print(os);
-			os << "\n";
-		}
 		os << "\n";
+	}
+}
+
+void GenerateJasminCode::generateComplexExpression(NodeExpression& expression) {
+	Logger::codeGenerator("if expression");
+	const std::string label = std::to_string(_labelIndex - 1);
+	generateSimpleExpression(*expression.lhs->lhs);
+
+	for (auto& expr : expression.lhs->rhs) {
+		token t = expr.first;
+		generateSimpleExpression(*expr.second);
+		if (t.value == "==") rawOut("\tif_icmpeq");
+		if (t.value == "!=") rawOut("\tif_icmpne");
+		if (t.value == "<") rawOut("\tif_icmplt");
+		if (t.value == "<=") rawOut("\tif_icmple");
+		if (t.value == ">") rawOut("\tif_icmpgt");
+		if (t.value == ">=") rawOut("\tif_icmpge");
+		os << " Ltrue" << label << "\n";
+		if (!orCatch.empty()) {
+			out(orCatch);
+			orCatch.clear();
+		}
 	}
 }
 
 void GenerateJasminCode::generateRelopExpression(NodeRelopExpression& relopExpression) {
 	Logger::codeGenerator("Relop Expression");
 	generateSimpleExpression(*relopExpression.lhs);
-	for (auto& rhsExpr : relopExpression.rhs | std::views::values) {
-		token t = relopExpression.rhs.front().first;
-		generateSimpleExpression(*rhsExpr);
+	int test = 0;
+	for (const auto& rhsExpr : relopExpression.rhs) {
+		token t = rhsExpr.first;
+		generateSimpleExpression(*rhsExpr.second);
 		if (t.type != Tokens::relop) return;
-		if (t.value == "==")  rawOut("\tif_icmpeq");
+		if (t.value == "==") rawOut("\tif_icmpeq");
 		if (t.value == "!=") rawOut("\tif_icmpne");
 		if (t.value == "<") rawOut("\tif_icmplt");
 		if (t.value == "<=") rawOut("\tif_icmple");
@@ -280,28 +306,26 @@ void GenerateJasminCode::generateRelopExpression(NodeRelopExpression& relopExpre
 	}
 }
 
-//todo
 void GenerateJasminCode::generateSimpleExpression(NodeSimpleExpression& simpleExpression) {
 	Logger::codeGenerator("simple expression");
 	generateTerm(*simpleExpression.lhs);
-	for (auto& rhsTerm : simpleExpression.rhs | std::views::values) {
-		generateTerm(*rhsTerm);
-		token t = simpleExpression.rhs.front().first;
+	for (auto& rhsTerm : simpleExpression.rhs) {
+		token t = rhsTerm.first;
+		if (t.value == "||") isOR = true;
+		generateTerm(*rhsTerm.second);
+		isOR = false;
 		if (t.type != Tokens::addop) return;
 		if (t.value == "+") out("iadd");
 		if (t.value == "-") out("isub");
-		if (t.value == "||"){
-			return;
-		}
 	}
 }
 
 void GenerateJasminCode::generateTerm(NodeTerm& term) {
 	Logger::codeGenerator("term");
 	generatePrimary(*term.lhs);
-	for (auto& rhsPrimary : term.rhs | std::views::values) {
-		generatePrimary(*rhsPrimary);
-		token t = term.rhs.front().first;
+	for (auto& rhsPrimary : term.rhs) {
+		generatePrimary(*rhsPrimary.second);
+		token t = rhsPrimary.first;
 		if (t.type != Tokens::mulop) return;
 		if (t.value == "*") out("imul");
 		if (t.value == "%") out("irem");
@@ -313,35 +337,38 @@ void GenerateJasminCode::generateTerm(NodeTerm& term) {
 void GenerateJasminCode::generatePrimary(NodePrimary& primary) {
 	Logger::codeGenerator("primary");
 	std::visit(overloaded{
-[this](token& t) {
-			if (t.type == Tokens::ID) {
-			   auto* s = _table.lookupSymbol(t.value);
-				//stops unnecessary iloads
-			   if (s == nullptr) return;
-			   if (s->id == _lastUsedId) return;
-			   if (s->inUse) out("iload " + std::to_string(s->index) + " ; " + t.value);
-			   else s->inUse = true;
-			}
-		    _lastUsedId = t.value;
-			if (t.type == Tokens::number || t.type == Tokens::string) {
-				out("ldc " + t.value);
-			}
-		   },
-		   [this](const std::unique_ptr<NodeExpression>& expr) {
-		       generateExpression(*expr);
-		   },
-		   [this](const std::pair<token, std::unique_ptr<NodePrimary>>& p) {
-		       generatePrimary(*p.second);
-				//since jvm doesnt have not, just xor -1
-				if (p.first.type == Tokens::_not) {
-					out("iconst_m1");
-					out("ixor");
-				}
-				else if(p.first.type == Tokens::addop && p.first.value == "-") {
-					out("ineg");
-				}
-		   }
-		}, primary.val);
+		           [this](token& t) {
+			           if (t.type == Tokens::ID) {
+				           auto* s = _table.lookupSymbol(t.value);
+				           //stops unnecessary iloads
+				           if (s == nullptr) return;
+				           if (s->id == _lastUsedId) return;
+				           //since output needs to be deferred for || store it 
+				           if (isOR) orCatch = "iload " + std::to_string(s->index);
+				           if (s->inUse && !isOR) out("iload " + std::to_string(s->index) + " ; " + t.value);
+				           else s->inUse = true;
+				           isOR = false;
+			           }
+			           _lastUsedId = t.value;
+			           if (t.type == Tokens::number || t.type == Tokens::string) {
+				           out("ldc " + t.value);
+			           }
+		           },
+		           [this](const std::unique_ptr<NodeExpression>& expr) {
+			           generateExpression(*expr);
+		           },
+		           [this](const std::pair<token, std::unique_ptr<NodePrimary>>& p) {
+			           generatePrimary(*p.second);
+			           //since jvm doesnt have not, just xor -1
+			           if (p.first.type == Tokens::_not) {
+				           out("iconst_m1");
+				           out("ixor");
+			           }
+			           else if (p.first.type == Tokens::addop && p.first.value == "-") {
+				           out("ineg");
+			           }
+		           }
+	           }, primary.val);
 
 	if (primary.rhs) {
 		generateFunctionCall(_lastUsedId, *primary.rhs.value());
@@ -352,17 +379,12 @@ void GenerateJasminCode::generateFunctionCall(const std::string& call, const Nod
 	Logger::codeGenerator("function call");
 	std::string funcCall = "invokestatic " + CliConfig::className + "/" + call + "(";
 
-	auto s = _table.lookupSymbol(call);
+	const auto s = _table.lookupSymbol(call);
 	if (s->parameters.has_value()) {
-		for (auto arg : s->parameters.value()) {
-			funcCall.append("I");
-		}
+		for (auto arg : s->parameters.value()) funcCall.append("I");
 	}
 	funcCall.append(")I");
-
-	if (args.lhs.has_value()) {
-		generateActualParameters(*args.lhs.value());
-	}
+	if (args.lhs.has_value()) generateActualParameters(*args.lhs.value());
 	out(funcCall);
 }
 
@@ -375,58 +397,64 @@ void GenerateJasminCode::generateActualParameters(NodeActualParameters& params) 
 }
 
 void GenerateJasminCode::extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types,
-                                                      const bool getID) {
+                                                      const bool getID, const bool getAll) {
 	if (functionCall.lhs) {
-		extractTypesFromActualParameters(*functionCall.lhs.value(), types, getID);
+		extractTypesFromActualParameters(*functionCall.lhs.value(), types, getID, getAll);
 	}
 }
 
 void GenerateJasminCode::extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types,
-                                                          const bool getID) {
-	extractTypesFromExpression(*params.lhs, types, getID);
+                                                          const bool getID, const bool getAll) {
+	extractTypesFromExpression(*params.lhs, types, getID, getAll);
 	for (const auto& expr : params.rhs) {
-		extractTypesFromExpression(*expr, types, getID);
+		extractTypesFromExpression(*expr, types, getID, getAll);
 	}
 }
 
 void GenerateJasminCode::extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types,
-                                                    const bool getID) {
-	extractTypesFromRelopExpression(*expr.lhs, types, getID);
+                                                    const bool getID, const bool getAll) {
+	extractTypesFromRelopExpression(*expr.lhs, types, getID, getAll);
 
 	for (const auto& subExpr : expr.rhs | std::views::values) {
-		extractTypesFromRelopExpression(*subExpr, types, getID);
+		if (getAll) types.emplace_back(expr.rhs.front().first);
+		extractTypesFromRelopExpression(*subExpr, types, getID, getAll);
 	}
 }
 
 void GenerateJasminCode::extractTypesFromRelopExpression(const NodeRelopExpression& relopExpr,
                                                          std::vector<token>& types,
-                                                         const bool getID) {
-	extractTypesFromSimpleExpression(*relopExpr.lhs, types, getID);
-	for (const auto& [relop, subExpr] : relopExpr.rhs) {
-		extractTypesFromSimpleExpression(*subExpr, types, getID);
+                                                         const bool getID, const bool getAll) {
+	extractTypesFromSimpleExpression(*relopExpr.lhs, types, getID, getAll);
+	for (const auto& subExpr : relopExpr.rhs | std::views::values) {
+		if (getAll) types.emplace_back(relopExpr.rhs.front().first);
+		extractTypesFromSimpleExpression(*subExpr, types, getID, getAll);
 	}
 }
 
 void GenerateJasminCode::extractTypesFromSimpleExpression(const NodeSimpleExpression& simpleExpr,
                                                           std::vector<token>& types,
-                                                          const bool getID) {
-	extractTypesFromTerm(*simpleExpr.lhs, types, getID);
+                                                          const bool getID, const bool getAll) {
+	extractTypesFromTerm(*simpleExpr.lhs, types, getID, getAll);
 	for (const auto& term : simpleExpr.rhs | std::views::values) {
-		extractTypesFromTerm(*term, types, getID);
+		if (getAll) types.emplace_back(simpleExpr.rhs.front().first);
+		extractTypesFromTerm(*term, types, getID, getAll);
 	}
 }
 
-void GenerateJasminCode::extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, const bool getID) {
-	extractTypesFromPrimary(*term.lhs, types, getID);
+void GenerateJasminCode::extractTypesFromTerm(const NodeTerm& term, std::vector<token>& types, const bool getID,
+                                              const bool getAll) {
+	extractTypesFromPrimary(*term.lhs, types, getID, getAll);
 	for (const auto& primary : term.rhs | std::views::values) {
-		extractTypesFromPrimary(*primary, types, getID);
+		if (getAll) types.emplace_back(term.rhs.front().first);
+		extractTypesFromPrimary(*primary, types, getID, getAll);
 	}
 }
 
 void GenerateJasminCode::extractTypesFromPrimary(const NodePrimary& primary, std::vector<token>& types,
-                                                 const bool getID) {
+                                                 const bool getID, const bool getAll) {
 	std::visit(overloaded{
 		           [&](const token& t) {
+			           if (getAll) return;
 			           if (t.type == Tokens::_int || t.type == Tokens::_char || t.type == Tokens::string) {
 				           types.push_back(t);
 			           }
@@ -443,10 +471,10 @@ void GenerateJasminCode::extractTypesFromPrimary(const NodePrimary& primary, std
 			           }
 		           },
 		           [&](const std::unique_ptr<NodeExpression>& expr) {
-			           extractTypesFromExpression(*expr, types, getID);
+			           extractTypesFromExpression(*expr, types, getID, getAll);
 		           },
 		           [&](const std::pair<token, std::unique_ptr<NodePrimary>>& p) {
-			           extractTypesFromPrimary(*p.second, types, getID);
+			           extractTypesFromPrimary(*p.second, types, getID, getAll);
 		           }
 	           }, primary.val);
 

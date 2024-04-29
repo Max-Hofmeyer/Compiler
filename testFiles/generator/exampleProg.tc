@@ -1,8 +1,27 @@
+int isEven(int n){
+	if(n % 2 == 0)
+	return 0;
+	else
+	return 1;
+}
+
+int isOdd(){
+	int b;
+	b = 5;
+	write("x is odd");
+	return b;
+}
+
 int main() {
 	int x;
 	x = 1;
 	x = x + 2 + 3 + 4;
+	isEven(x);
+	write("Hello");
+	newline;
 	write(x);
-	write("what?");
+	x = isOdd();
+	write(x);
+
 	return;
 }

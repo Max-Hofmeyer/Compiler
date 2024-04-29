@@ -18,7 +18,6 @@ public:
     int index = 0;
     bool inUse = false;
     std::optional<std::vector<token>> parameters;
-    int children = 0;
 
     explicit Symbol(std::string id, token type, int scopeLevel, int index)
         : id(std::move(id)), type(std::move(type)), scopeLevel(scopeLevel), index(index) {}
@@ -30,12 +29,10 @@ class SymbolTable {
 public:
     void enterScope() { _scope++; }
     void exitScope() { _scope--; }
-    void formatTableIndex();
     //void exitScope();
    // bool insertSymbol(const std::string& id, const token& type, int scope = 0);
     bool insertSymbol(const std::string& id, const token& type, int scope = 0, const std::vector<token>& params = {}, bool isFunc = false);
     bool checkForSymbol(const std::string& id);
-    int getScopeCount(const std::string& id);
     //returns a pointer to the symbol from the table if found, null if not found
     Symbol* lookupSymbol(const std::string& id);
 
@@ -46,6 +43,8 @@ public:
     void dumpTable();
     int _scope = 0;
     int _index = 0;
+    int _lastScope = 0;
+    std::string _lastFunction;
 
 private:
     std::unordered_map<std::string, std::stack<Symbol>> _table;
