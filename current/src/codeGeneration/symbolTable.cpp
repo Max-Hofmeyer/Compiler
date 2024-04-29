@@ -11,22 +11,21 @@
 //	_scope--;
 //}
 
-bool SymbolTable::insertSymbol(const std::string& id, const token& type, int scope, const std::vector<token>& params, bool isFunc) {
-	if (scope == 0) scope = _scope;
+bool SymbolTable::insertSymbol(const std::string& id, const token& type, bool isFunc) {
 	if (isFunc) _index = 0;
 	if (id == "main") _index = -1;
 
 	const auto it = _table.find(id);
 
-	if (it == _table.end() || it->second.top().scopeLevel != scope) {
-		Logger::symbolTable(type.value + " " + id + " in scope " + std::to_string(scope) + " at index " + std::to_string(_index));
-		Symbol s(id, type, scope, _index++);
+	if (it == _table.end() || it->second.top().scopeLevel != _scope || it->second.top().scopeCount != _scopeCount) {
+		Logger::symbolTable(type.value + " " + id + " in scope " + std::to_string(_scope) + " at index " + std::to_string(_index));
+		Symbol s(id, type, _scope, _index++);
 		_table[id].emplace(s);
 		_historicalTable.emplace_back(id, s);
 		_lastScope = _scope;
 		return true;
 	}
-	Logger::symbolTableWarning(type.value + " " + id + " in scope " + std::to_string(scope));
+	Logger::symbolTableWarning(type.value + " " + id + " in scope " + std::to_string(_scope));
 	return false;
 }
 
@@ -49,9 +48,9 @@ std::string SymbolTable::getLastSymbol() {
 std::string SymbolTable::getFirstSymbol() {
 	if (_historicalTable.empty()) return {};
 
-	for (auto it = _historicalTable.rbegin(); it != _historicalTable.rend(); ++it) {
-		if (it->second.scopeLevel == 0) {
-			return it->second.id;
+	for (auto& it : std::ranges::reverse_view(_historicalTable)) {
+		if (it.second.scopeLevel == 0) {
+			return it.second.id;
 		}
 	}
 	return {};

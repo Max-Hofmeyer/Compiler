@@ -250,14 +250,12 @@ token Scanner::getNextToken(bool display) {
 			eat();
 			return createToken(Tokens::assignop, line, "ASSIGNOP", "=", false);
 		}
+		//since nothing was registered, assumed illegal character
+		const auto illegalChar = std::string(1, peek().value());
 		//weirdest edge case....
-		if (peek().value() != '\t') {
-			//since nothing was registered, assumed illegal character
-			const auto illegalChar = std::string(1, peek().value());
-			Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
-			eat();
-			return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
-		}
+		if (illegalChar != " " && illegalChar != "\n" && illegalChar != "\t") Logger::warning("Illegal character (" + illegalChar + ") at line: " + std::to_string(line));
+		eat();
+		return token{ Tokens::ILLEGAL, -1, "ILLEGAL TOKEN", illegalChar, false };
 	}
 
 	//at this point its either EOF, or a comment

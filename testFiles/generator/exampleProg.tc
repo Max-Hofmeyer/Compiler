@@ -1,27 +1,31 @@
-int isEven(int n){
-	if(n % 2 == 0)
-	return 0;
-	else
-	return 1;
-}
-
-int isOdd(){
-	int b;
-	b = 5;
-	write("x is odd");
-	return b;
+int nonsense(int a, int b, int c) {
+  int k;
+  k = 1;
+//  x = k * 10 - s(z) % 2 / 15 + 66;
+  x = k * 10 - s(z) % 2 / (15 + 66);
+  read(w);
+  /*/*   /*  */*/*/
+  write(' '); write("hi mom");
+  write(v); newline; break;
+  if(x < 5)
+    x = 2 = var1;
+  else {
+    x = 55; newline;
+  }
+  while(a){}{}{}{};
+  return (((z - 2)));
+  write(a,b,"bye now");
+  'v'+ -z;
+  "helloThere                        25";
+  while( z > (10 * d)) 
+    break;
+  return;
+  if(zzz) write(zzz);
+  y != z;
+  k(a,b,c);
+  {{{  x123456 = k + -s % 15 + 4; }}}
+  ;;;;
 }
 
 int main() {
-	int x;
-	x = 1;
-	x = x + 2 + 3 + 4;
-	isEven(x);
-	write("Hello");
-	newline;
-	write(x);
-	x = isOdd();
-	write(x);
-
-	return;
 }

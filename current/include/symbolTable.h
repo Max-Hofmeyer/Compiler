@@ -14,9 +14,10 @@ class Symbol {
 public:
     std::string id;
     token type;
-    int scopeLevel;
+    int scopeLevel = 0;
     int index = 0;
-    bool inUse = false;
+    int scopeCount = 0;
+	bool inUse = false;
     std::optional<std::vector<token>> parameters;
 
     explicit Symbol(std::string id, token type, int scopeLevel, int index)
@@ -30,12 +31,10 @@ public:
     void enterScope() { _scope++; }
     void exitScope() { _scope--; }
     //void exitScope();
-   // bool insertSymbol(const std::string& id, const token& type, int scope = 0);
-    bool insertSymbol(const std::string& id, const token& type, int scope = 0, const std::vector<token>& params = {}, bool isFunc = false);
+    bool insertSymbol(const std::string& id, const token& type, bool isFunc = false);
     bool checkForSymbol(const std::string& id);
     //returns a pointer to the symbol from the table if found, null if not found
     Symbol* lookupSymbol(const std::string& id);
-
     //returns the ID of the most recent emplacement on the historical table
     std::string getLastSymbol();
     std::string getFirstSymbol();
@@ -44,6 +43,7 @@ public:
     int _scope = 0;
     int _index = 0;
     int _lastScope = 0;
+    int _scopeCount = 0;
     std::string _lastFunction;
 
 private:

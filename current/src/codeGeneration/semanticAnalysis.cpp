@@ -28,6 +28,7 @@ void AnalyseSemantics::analyzeDefinition(const NodeDefinition& definition) {
 	if (!_table.insertSymbol(definition.lhs->id.value, definition.lhs->type)) {
 		reportError(definition.lhs->id.value + " already declared within the scope");
 	}
+	++_table._scopeCount;
 	if (definition.rhs.has_value()) {
 		analyzeFunctionDefinition(*definition.rhs.value());
 	}
@@ -65,7 +66,7 @@ void AnalyseSemantics::analyzeFormalParamList(const NodeFormalParamList& formalP
 	std::vector<token> parameters;
 	parameters.push_back(formalParamList.lhs->type);
 
-	if (!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type, 0, {} , true)) {
+	if (!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type, true)) {
 		reportError(std::to_string(formalParamList.lhs->id.lineLoc) + ": '" + formalParamList.lhs->id.value +
 			"' already declared within the scope");
 	}
