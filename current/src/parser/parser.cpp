@@ -7,8 +7,8 @@ std::unique_ptr<NodeToyCProgram> Parser::begin() {
 	if (peekSafe().type != Tokens::eof && !_tokenBuffer.empty() && !hasError) {
 		auto program = parseToyCProgram();
 		if (!hasError) return program;
-		return nullptr;
 	}
+	return nullptr;
 }
 
 std::unique_ptr<NodeToyCProgram> Parser::parseToyCProgram() {

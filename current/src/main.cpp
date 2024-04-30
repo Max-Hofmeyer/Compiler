@@ -17,7 +17,7 @@ void assignLogLevel() {
 }
 
 int main(int argc, char** argv) {
-	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 03/27/2024" << "\n";
+	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/24/2024" << "\n";
 
 	/* setup */
 	CliConfig::ParseCli(argc, argv);

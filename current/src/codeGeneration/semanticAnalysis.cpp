@@ -26,10 +26,10 @@ void AnalyseSemantics::analyzeDefinition(const NodeDefinition& definition) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("definition");
 	std::string temp = definition.lhs->id.value;
+	_table._scopeCount += 1;
 	if (!_table.insertSymbol(definition.lhs->id.value, definition.lhs->type)) {
 		reportError(definition.lhs->id.value + " already declared within the scope");
 	}
-	++_table._scopeCount;
 	if (definition.rhs.has_value()) analyzeFunctionDefinition(*definition.rhs.value());
 
 	//if a function doesn't have a return, no node to traverse. so this is what you have to do..
