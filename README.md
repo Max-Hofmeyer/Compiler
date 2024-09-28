@@ -71,7 +71,7 @@ If you want to assemble the .j output file, you must use the [Jasmin assembler.]
 Since its hard to understand a compiler without being privy to some of the background theory, I've included some background knowledge. However this is nowhere near comprehensive, and if you're interested in learning more I'd recommend skimming the [Dragon Book.](https://github.com/muthukumarse/books/blob/master/Dragon%20Book%20Compilers%20Principle%20Techniques%20and%20Tools%202nd%20Edtion.pdf)
 #### Tokens & Lexemes
 A token is essentially storing a regular expression. It is the most primitive definition of a language. For example, this is what declaring a string is in the form of a regular expression:
-![[stringstatemachine.png]]
+![stringstatemachine](https://github.com/user-attachments/assets/4e910005-5291-44c2-b579-d5afa7513ac5)
 
 #### Syntax & Grammar
 Forming the syntax of a language is typically very time intensive. As the author has to consider many different rules and productions in-order to get a fully fleshed out language. Take the specification for a definition: 
