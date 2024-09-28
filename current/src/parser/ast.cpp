@@ -1,5 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 03/23/2024
-
 #include "ast.hpp"
 #include "cliConfig.h"
 
@@ -33,7 +31,9 @@ void NodeDefinition::print(std::ostream& out) const {
     p.indent();
     lhs->print(out);
     out << "\n";
-    if (rhs.has_value()) rhs.value()->print(out);
+	if (rhs.has_value()) 
+        rhs.value()->print(out);
+
     p.outdent();
     out << "\n" << p.spaces() << ")";
 }

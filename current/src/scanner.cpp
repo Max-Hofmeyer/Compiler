@@ -1,4 +1,4 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
+ 
 
 #include "scanner.h"
 
@@ -94,13 +94,21 @@ token Scanner::getNextToken(bool display) {
 
 		//strings
 		if (peek().value() == '\"') {
+			/* Consume the '"' character, and advance the buffer */
 			buffer.push_back(eat());
-			while (peek().value() != '\"' && peek().value() != '\n') { buffer.push_back(eat()); }
+
+			/* Until the subsequent '"' character or new line, keep consuming and advancing the buffer */
+			while (peek().value() != '\"' && peek().value() != '\n') {
+				buffer.push_back(eat());
+			}
+
+			/* Check for an empty string: '""' */
 			if (peek().value() == '\"') {
 				buffer.push_back(eat());
 				return createToken(Tokens::string, line, "STRING", buffer, false);
 			}
 
+			/* At this point it's an unterminated string, so report the error */
 			return reportError("Illegal string at line: " + std::to_string(line));
 		}
 

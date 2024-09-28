@@ -1,4 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/27/2024
 #include "parser.h"
 
 std::unique_ptr<NodeToyCProgram> Parser::begin() {
@@ -8,6 +7,7 @@ std::unique_ptr<NodeToyCProgram> Parser::begin() {
 		auto program = parseToyCProgram();
 		if (!hasError) return program;
 	}
+
 	return nullptr;
 }
 
@@ -26,6 +26,7 @@ std::unique_ptr<NodeToyCProgram> Parser::parseToyCProgram() {
 		_tokenBuffer.clear();
 		_index = 0;
 	}
+
 	return program;
 }
 
@@ -54,6 +55,7 @@ std::unique_ptr<NodeDefinition> Parser::parseDefinition() {
 	if (function) return std::make_unique<NodeDefinition>(std::move(declaration), std::move(function));
 	if (declaration) return std::make_unique<NodeDefinition>(std::move(declaration));
 	reportError("'Definition'");
+
 	return nullptr;
 }
 
@@ -81,6 +83,7 @@ std::unique_ptr<NodeFunctionDefinition> Parser::parseFunctionDefinition() {
 	Logger::parserExit("FunctionDefinition");
 
 	if (header && body) return std::make_unique<NodeFunctionDefinition>(std::move(header), std::move(body));
+
 	return nullptr;
 }
 
@@ -108,6 +111,7 @@ std::unique_ptr<NodeFunctionHeader> Parser::parseFunctionHeader() {
 	}
 	else reportError("'('");
 	Logger::parserExit("FunctionHeader");
+
 	return nullptr;
 }
 
@@ -152,6 +156,7 @@ std::unique_ptr<NodeFormalParamList> Parser::parseFormalParamList() {
 	}
 	else reportError("'type' token");
 	Logger::parserExit("FormalParamList");
+
 	return formal;
 }
 
@@ -172,6 +177,7 @@ std::unique_ptr<NodeStatement> Parser::parseStatement() {
 	else if (nextT.type == Tokens::lcurly) stmt = std::make_unique<NodeStatement>(parseCompoundStatement());
 	else if (isStartingExpression(nextT)) stmt = std::make_unique<NodeStatement>(parseExpressionStatement());
 	Logger::parserExit("Statement");
+
 	return stmt;
 }
 
@@ -236,7 +242,6 @@ std::unique_ptr<NodeCompoundStatement> Parser::parseCompoundStatement() {
 	}
 	else reportError("'{'");
 	Logger::parserExit("CompoundStatement");
-	//scope--;
 	return compound;
 }
 
@@ -262,6 +267,7 @@ std::unique_ptr<NodeIfStatement> Parser::parseIfStatement() {
 		else reportError("'('");
 	}
 	else reportError("'if'");
+
 	return nullptr;
 }
 
@@ -593,35 +599,23 @@ token Parser::eat() {
 	return _tokenBuffer.at(_index++);
 }
 
-//returns null if the current token in the buffer doesnt match 
+//returns null if the current token in the buffer doesn't match 
 std::optional<token> Parser::eatCurrentToken(Tokens type) {
 	if (_index < _tokenBuffer.size() && _tokenBuffer.at(_index).type == type) return eat();
 	return {};
 }
 
-//used for convenience, didnt want to do "if eatCurrentToken().has_value()" everywhere..
-//worst mistake of all time
+//used for convenience, didn't want to do "if eatCurrentToken().has_value()" everywhere..
 bool Parser::checkAndEatToken(Tokens type) {
 	if (eatCurrentToken(type).has_value()) return true;
 	return false;
 }
 
-//returns the previous token in the index, is safe 
-token Parser::previousToken(int offset) {
-	if (_index > 0 && !_tokenBuffer.empty()) return _tokenBuffer.at(_index - offset);
-	return _tokenBuffer.at(0);
-}
-
 //safer way then just calling _tokenBuffer.emplace_back(_scanner.getNextToken())
 void Parser::addTokenToBuffer() {
-	try {
-		token t = _scanner.getNextToken();
-		if (t.type != Tokens::ILLEGAL) _tokenBuffer.emplace_back(t);
-		else addTokenToBuffer();
-	}
-	catch (std::bad_optional_access) {
-
-	}
+	token t = _scanner.getNextToken();
+	if (t.type != Tokens::ILLEGAL) _tokenBuffer.emplace_back(t);
+	else addTokenToBuffer();
 }
 
 

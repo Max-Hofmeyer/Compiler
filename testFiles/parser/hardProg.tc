@@ -3,7 +3,8 @@ int factorial(int n) {
     if (n == 0)
         return 1;
     else
-        return n * factorial(n - 1);
+        n = n - 1;
+        return n * factorial(n);
 }
 
 int isEven(int number) {
@@ -26,12 +27,12 @@ int main() {
     write(result);
     read(result);
 
-    if (isEven(result)) {
+    if (isEven(result) == 1) {
         write(" which is even");
     } else {
         write(" which is odd");
     }
     newline;
 
-    return;
+    return 0;
 }

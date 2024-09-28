@@ -1,5 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
-
 #include "cliConfig.h"
 
 int CliConfig::debugLevel = -1;

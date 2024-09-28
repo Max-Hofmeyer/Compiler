@@ -1,11 +1,8 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/23/2024
-
 #pragma once
 #include <optional>
 #include "ast.hpp"
 #include "scanner.h"
 #include "cliConfig.h"
-#include "symbolTable.h"
 
 class Parser{
 public:
@@ -45,7 +42,6 @@ private:
 
 	/* Class variables */
 	Scanner& _scanner;
-	//SymbolTable& _table;
 	std::vector<token> _tokenBuffer;
 	std::vector<token> _errorBuffer;
 	size_t _index = 0;
@@ -62,7 +58,6 @@ private:
 	token eat();
 	std::optional<token> eatCurrentToken(Tokens type);
 	bool checkAndEatToken(Tokens type);
-	token previousToken(int offset = 1);
 	void addTokenToBuffer();
 
 	/* Error reporting and debugging */

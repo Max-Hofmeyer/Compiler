@@ -1,5 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/21/2024
-
 #include "cliConfig.h"
 #include "logger.h"
 #include "scanner.h"
@@ -16,35 +14,51 @@ void assignLogLevel() {
 	else Logger::setLogLevel(Logger::Level::Default);
 }
 
-int main(int argc, char** argv) {
-	std::cout << "Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/24/2024" << "\n";
+int main(const int argc, char** argv) {
 
-	/* setup */
+	//configure logger based on flags
 	CliConfig::ParseCli(argc, argv);
-	if (CliConfig::hasError) return EXIT_FAILURE;
+	if (CliConfig::hasError) {
+		return EXIT_FAILURE;
+	}
 	assignLogLevel();
-	if (!CliConfig::LoadFile()) return EXIT_FAILURE;
 
-	/* part 1 */
+	if (!CliConfig::LoadFile()) {
+		return EXIT_FAILURE;
+	}
+
 	Scanner scanner(std::move(CliConfig::fileContents));
 
-	/* part 2 */
+	//parser driven implementation, scanner only reads next token when requested by parser
 	Parser parser(scanner);
+
+	//program will return a pointer to the top most program node
 	auto program = parser.begin();
-	if (program == nullptr || parser.hasError) return EXIT_FAILURE;
-	if (CliConfig::dumpAST || CliConfig::demo) program->print(std::cout);
+	if (program == nullptr || parser.hasError) {
+		return EXIT_FAILURE;
+	}
 
-	/* part 3 */
+	//program will recursively print its children
+	if (CliConfig::dumpAST || CliConfig::demo) {
+		program->print(std::cout);
+	}
+
+	//once ast is built, 2 passes are made:
+	//1. Checks for logical / semantic errors. Stores identifiers inside a symbol table
 	SymbolTable table;
-	AnalyseSemantics checkAST(table, program);
+	AnalyseSemantics dirty_tree(table, program);
+	dirty_tree.traverseTree();
+	if (dirty_tree.hasError) {
+		return EXIT_FAILURE;
+	}
 
-	//check semantics
-	checkAST.traverseTree();
-	if (checkAST.hasError) return EXIT_FAILURE;
-	if (CliConfig::dumpST || CliConfig::demo) table.dumpTable();
+	if (CliConfig::dumpST || CliConfig::demo) {
+		table.dumpTable();
+	}
 
-	//generate jasmin code
-	GenerateJasminCode outputAST(table, program);
-	outputAST.generateCode();
+	//2. Outputs jasmin assembler code in the correct order, and uses the symbol table to generate
+	//labels and jumps
+	GenerateJasminCode clean_tree(table, program);
+	clean_tree.generateCode();
 	return EXIT_SUCCESS;
 }

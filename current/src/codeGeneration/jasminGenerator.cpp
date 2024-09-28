@@ -1,5 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/19/2024
-
 #include "jasminGenerator.h"
 
 //needed for visit: https://en.cppreference.com/w/cpp/utility/variant/visit
@@ -13,7 +11,10 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 void GenerateJasminCode::generateCode() {
 	if (_program == nullptr || !CliConfig::dumpCode) return;
-	if (CliConfig::demo || CliConfig::verboseEnabled) debugStmts = true;
+	if (CliConfig::demo || CliConfig::verboseEnabled) {
+		debugStmts = true;
+	}
+
 	os.open(CliConfig::jasminFileLocation);
 	if (!os.is_open()) {
 		Logger::error("Failed to open jasmin file at: " + CliConfig::jasminFileLocation.string());
@@ -22,8 +23,8 @@ void GenerateJasminCode::generateCode() {
 	Logger::codeGeneratorStream("Writing to jasmin file: " + CliConfig::jasminFileLocation.string());
 
 	Logger::codeGenerator("Generating ToyCProgram");
-	os << "; File:     \t" << CliConfig::jasminFileLocation.string() << "\n"
-		<< "; Author(s):\tMax Hofmeyer, Ahmed Malik, 19 April 2024\n"
+	os << "; File:\t" << CliConfig::jasminFileLocation.string() << "\n"
+		<< "; Author:   \tMax Hofmeyer\n"
 		<< "; -------------------------------------------------------------------------\n\n"
 		<< ".class public " + CliConfig::className + "\n"
 		<< ".super java/lang/Object\n\n"
@@ -104,10 +105,12 @@ void GenerateJasminCode::generateFormalParamList(const NodeFormalParamList& form
 void GenerateJasminCode::generateStatement(NodeStatement& statement) {
 	std::visit(overloaded{
 		           [this](const std::unique_ptr<NodeExpressionStatement>& arg) { generateExpressionStatement(*arg); },
-		           [this](const std::unique_ptr<NodeBreakStatement>& arg) { generateBreakStatement(*arg); },
+		           [this](const std::unique_ptr<NodeBreakStatement>& arg) {
+		           },
 		           [this](const std::unique_ptr<NodeCompoundStatement>& arg) { generateCompoundStatement(*arg); },
 		           [this](const std::unique_ptr<NodeIfStatement>& arg) { generateIfStatement(*arg); },
-		           [this](const std::unique_ptr<NodeNullStatement>& arg) { generateNullStatement(*arg); },
+		           [this](const std::unique_ptr<NodeNullStatement>& arg) {
+		           },
 		           [this](const std::unique_ptr<NodeReturnStatement>& arg) { generateReturnStatement(*arg); },
 		           [this](const std::unique_ptr<NodeWhileStatement>& arg) { generateWhileStatement(*arg); },
 		           [this](const std::unique_ptr<NodeReadStatement>& arg) { generateReadStatement(*arg); },
@@ -118,9 +121,6 @@ void GenerateJasminCode::generateStatement(NodeStatement& statement) {
 
 void GenerateJasminCode::generateExpressionStatement(NodeExpressionStatement& expressionStatement) {
 	generateExpression(*expressionStatement.exp);
-}
-
-void GenerateJasminCode::generateBreakStatement(NodeBreakStatement& breakStatement) {
 }
 
 void GenerateJasminCode::generateCompoundStatement(const NodeCompoundStatement& compoundStatement) {
@@ -167,9 +167,6 @@ void GenerateJasminCode::generateIfStatement(const NodeIfStatement& ifStatement)
 		generateStatement(*ifStatement.rhs.value());
 	}
 	out("Lend" + label + ":");
-}
-
-void GenerateJasminCode::generateNullStatement(NodeNullStatement& nullStatement) {
 }
 
 void GenerateJasminCode::generateReturnStatement(const NodeReturnStatement& returnStatement) {
@@ -340,13 +337,18 @@ void GenerateJasminCode::generatePrimary(NodePrimary& primary) {
 		           [this](token& t) {
 			           if (t.type == Tokens::ID) {
 				           auto* s = _table.lookupSymbol(t.value);
-				           //stops unnecessary iloads
-				           if (s == nullptr) return;
-				           if (s->id == _lastUsedId) return;
+				           if (s == nullptr || s->id == _lastUsedId) return; //stops unnecessary iloads
+
 				           //since output needs to be deferred for || store it 
-				           if (isOR) orCatch = "iload " + std::to_string(s->index);
-				           if (s->inUse && !isOR) out("iload " + std::to_string(s->index) + " ; " + t.value);
-				           else s->inUse = true;
+				           if (isOR) {
+					           orCatch = "iload " + std::to_string(s->index);
+				           }
+				           if (s->inUse && !isOR) {
+					           out("iload " + std::to_string(s->index) + " ; " + t.value);
+				           }
+				           else {
+					           s->inUse = true;
+				           }
 				           isOR = false;
 			           }
 			           _lastUsedId = t.value;
@@ -393,21 +395,6 @@ void GenerateJasminCode::generateActualParameters(NodeActualParameters& params) 
 	generateExpression(*params.lhs);
 	for (auto& param : params.rhs) {
 		generateExpression(*param);
-	}
-}
-
-void GenerateJasminCode::extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types,
-                                                      const bool getID, const bool getAll) {
-	if (functionCall.lhs) {
-		extractTypesFromActualParameters(*functionCall.lhs.value(), types, getID, getAll);
-	}
-}
-
-void GenerateJasminCode::extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types,
-                                                          const bool getID, const bool getAll) {
-	extractTypesFromExpression(*params.lhs, types, getID, getAll);
-	for (const auto& expr : params.rhs) {
-		extractTypesFromExpression(*expr, types, getID, getAll);
 	}
 }
 

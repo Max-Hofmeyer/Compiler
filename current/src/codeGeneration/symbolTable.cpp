@@ -1,4 +1,4 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/8/2024
+ 
 
 #include "symbolTable.h"
 

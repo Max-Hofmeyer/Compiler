@@ -1,5 +1,3 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/13/2024
-
 #include "semanticAnalysis.h"
 
 //needed for visit: https://en.cppreference.com/w/cpp/utility/variant/visit
@@ -69,9 +67,11 @@ void AnalyseSemantics::analyzeFunctionBody(const NodeFunctionBody& fBody) {
 void AnalyseSemantics::analyzeFormalParamList(const NodeFormalParamList& formalParamList) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("formal parameters ");
+
 	const std::string functionID = _table.getLastSymbol();
 	const auto actualSymbol = _table.lookupSymbol(functionID);
 	std::vector<token> parameters;
+
 	parameters.push_back(formalParamList.lhs->type);
 
 	if (!_table.insertSymbol(formalParamList.lhs->id.value, formalParamList.lhs->type, true)) {
@@ -155,6 +155,8 @@ void AnalyseSemantics::analyzeNullStatement(NodeNullStatement& nullStatement) {
 void AnalyseSemantics::analyzeReturnStatement(const NodeReturnStatement& returnStatement) {
 	if (hasError) return;
 	Logger::semanticAnalyzer("return statement");
+
+	//kinda hacky, but since we only have to worry about 1 namespace the first symbol will always be the parent identifier
 	const auto func = _table.lookupSymbol(_table.getFirstSymbol());
 	if (!returnStatement.lhs.has_value()) {
 		reportError("No return provided for function '" + func->id + "' expected return of type '" + func->type.typeString + "'");
@@ -163,15 +165,19 @@ void AnalyseSemantics::analyzeReturnStatement(const NodeReturnStatement& returnS
 
 	std::vector<token> returnT;
 	if (func == nullptr) return;
-
 	extractTypesFromExpression(*returnStatement.lhs.value(), returnT, false);
-	if (returnT.empty()) reportError("No return provided for function '" + func->id + "' expected return of type '" + func->type.typeString + "'");
+
+	if (returnT.empty()) {
+		reportError("No return provided for function '" + func->id + "' expected return of type '" + func->type.typeString + "'");
+	}
 	if (returnT[0].type != func->type.type) {
 		reportError("'" + returnT[0].value +
 			"' incorrect return type for function '"
 			+ func->id + "', expected type '" + func->type.typeString + "'");
 		return;
 	}
+
+	//for the definition check, if this is left false a function has no return which is illegal
 	isReturn = true;
 	analyzeExpression(*returnStatement.lhs.value());
 }

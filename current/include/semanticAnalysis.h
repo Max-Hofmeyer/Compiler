@@ -1,9 +1,6 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/13/2024
 #pragma once
-
 #include "ast.hpp"
 #include "symbolTable.h"
-#include <algorithm>
 #include <ranges>
 
 class AnalyseSemantics {
@@ -41,6 +38,7 @@ private:
 	void analyzeActualParameters(NodeActualParameters& params);
 
 	/* Helpers that get all the primitive data types */
+	/* See writeup on readme on why I regret this... */
 	void extractTypesFromFunctionCall(const NodeFunctionCall& functionCall, std::vector<token>& types, bool getID = false);
 	void extractTypesFromActualParameters(const NodeActualParameters& params, std::vector<token>& types, bool getID = false);
 	void extractTypesFromExpression(const NodeExpression& expr, std::vector<token>& types, bool getID = false);

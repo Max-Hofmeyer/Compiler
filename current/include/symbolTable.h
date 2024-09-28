@@ -1,12 +1,8 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 04/8/2024
-
 #pragma once
 #include <string>
 #include <unordered_map>
 #include <iostream>
-#include <map>
 #include <stack>
-
 #include "ast.hpp"
 #include "tokens.h"
 

@@ -1,4 +1,4 @@
-//Max Hofmeyer & Ahmed Malik | EGRE 591 | 02/27/2024
+ 
 #pragma once
 #include <vector>
 #include <string>

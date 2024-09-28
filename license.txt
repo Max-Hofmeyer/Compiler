@@ -1,0 +1,7 @@
+# License
+
+© Max Hofmeyer 2024
+
+All Rights Reserved.
+
+This repository and its contents are intended solely for personal reference and demonstration purposes. Unauthorized use, reproduction, or distribution of this code for academic assignments or any other projects without explicit permission from the author is prohibited.
