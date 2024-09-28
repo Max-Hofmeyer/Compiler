@@ -1,11 +1,3 @@
-## Table Of Contents
-
-- [About]
-- [Build Instructions]
-- [ToyC Specifications]
-- [Implementation]
-- [Conclusion]
-
 ## About 
 ---
 This was a semester long project for a graduate compiler construction course.  The compiler uses a  LL(1) recursive decent parser, and generates a Jasmin file. The file can then be assembled into JVM byte code, which will run as a Java class file. Meaning this compiler takes in a ToyC program  and outputs a Java program.
